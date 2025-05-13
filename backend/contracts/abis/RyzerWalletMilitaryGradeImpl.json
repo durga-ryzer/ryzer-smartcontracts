@@ -1,0 +1,750 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "internalType": "address[]",
+        "name": "signers",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_threshold",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "merkleRoot",
+        "type": "bytes32"
+      }
+    ],
+    "name": "setMultiSigners",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "userId",
+        "type": "uint64"
+      },
+      {
+        "internalType": "enum IRyzerMilitaryGradeSecurity.SecurityLevel",
+        "name": "securityLevel",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "ipAddressHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "deviceIdHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "geoLocationHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "createMilitaryGradeWallet",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "operationType",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "ipAddressHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "deviceIdHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "geoLocationHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bool",
+        "name": "mfaVerified",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "biometricVerified",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "hardwareKeyVerified",
+        "type": "bool"
+      }
+    ],
+    "name": "verifySecurityOperation",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "action",
+        "type": "string"
+      },
+      {
+        "internalType": "uint64",
+        "name": "userId",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "ipAddressHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "deviceIdHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bool",
+        "name": "success",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "riskScore",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "details",
+        "type": "bytes"
+      }
+    ],
+    "name": "recordSecurityAudit",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "anomalyScore",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "lock",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "lockDuration",
+        "type": "uint256"
+      }
+    ],
+    "name": "updateAnomalyScore",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      }
+    ],
+    "name": "unlockWallet",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "enabled",
+        "type": "bool"
+      }
+    ],
+    "name": "setEmergencyLockdown",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "enum IRyzerMilitaryGradeSecurity.SecurityLevel",
+            "name": "securityLevel",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "mfaRequired",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "backupFrequency",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "lastBackup",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "anomalyDetectionEnabled",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "autoLockThreshold",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "geofencingEnabled",
+            "type": "bool"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "allowedCountriesHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bool",
+            "name": "biometricRequired",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "hardwareKeyRequired",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct IRyzerMilitaryGradeSecurity.MilitaryGradeConfig",
+        "name": "config",
+        "type": "tuple"
+      }
+    ],
+    "name": "updateSecurityConfig",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "allowedIPsHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "allowedTimeWindowStart",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "allowedTimeWindowEnd",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "allowedGeolocationsHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxTransactionAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "requireMFA",
+            "type": "bool"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "allowedDevicesHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "cooldownPeriod",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "lastAccessed",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct IRyzerMilitaryGradeSecurity.AccessPolicy",
+        "name": "policy",
+        "type": "tuple"
+      }
+    ],
+    "name": "updateAccessPolicy",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "attestationHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bool",
+        "name": "verified",
+        "type": "bool"
+      }
+    ],
+    "name": "registerTEEAttestation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "threshold",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalShares",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "sharesHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "configureTSS",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "militaryGradeConfigs",
+    "outputs": [
+      {
+        "internalType": "enum IRyzerMilitaryGradeSecurity.SecurityLevel",
+        "name": "securityLevel",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "mfaRequired",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "backupFrequency",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "lastBackup",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "anomalyDetectionEnabled",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "autoLockThreshold",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "geofencingEnabled",
+        "type": "bool"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "allowedCountriesHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bool",
+        "name": "biometricRequired",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "hardwareKeyRequired",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "accessPolicies",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "allowedIPsHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "allowedTimeWindowStart",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "allowedTimeWindowEnd",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "allowedGeolocationsHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxTransactionAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "requireMFA",
+        "type": "bool"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "allowedDevicesHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "cooldownPeriod",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "lastAccessed",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "intrusionDetection",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "anomalyScore",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "lastDetectionTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "locked",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "lockExpiry",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum IRyzerMilitaryGradeSecurity.SecurityLevel",
+        "name": "level",
+        "type": "uint8"
+      }
+    ],
+    "name": "MilitaryGradeWalletCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum IRyzerMilitaryGradeSecurity.SecurityLevel",
+        "name": "level",
+        "type": "uint8"
+      }
+    ],
+    "name": "SecurityConfigUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      }
+    ],
+    "name": "AccessPolicyUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "action",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "success",
+        "type": "bool"
+      }
+    ],
+    "name": "SecurityAuditRecorded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "verified",
+        "type": "bool"
+      }
+    ],
+    "name": "TEEAttestationVerified",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "score",
+        "type": "uint256"
+      }
+    ],
+    "name": "AnomalyDetected",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "expiry",
+        "type": "uint256"
+      }
+    ],
+    "name": "WalletLocked",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      }
+    ],
+    "name": "WalletUnlocked",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      }
+    ],
+    "name": "EmergencyLockdownActivated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      }
+    ],
+    "name": "EmergencyLockdownDeactivated",
+    "type": "event"
+  }
+]

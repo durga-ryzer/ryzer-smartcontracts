@@ -1,0 +1,276 @@
+[
+    {
+        "inputs": [
+            {
+                "internalType": "address[]",
+                "name": "recoveryKeys",
+                "type": "address[]"
+            },
+            {
+                "internalType": "uint64",
+                "name": "recoveryThreshold",
+                "type": "uint64"
+            },
+            {
+                "internalType": "address[]",
+                "name": "socialKeys",
+                "type": "address[]"
+            },
+            {
+                "internalType": "uint64",
+                "name": "socialThreshold",
+                "type": "uint64"
+            }
+        ],
+        "name": "initializeRecovery",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address[]",
+                "name": "newRecoveryKeys",
+                "type": "address[]"
+            },
+            {
+                "internalType": "uint64",
+                "name": "newRecoveryThreshold",
+                "type": "uint64"
+            },
+            {
+                "internalType": "address[]",
+                "name": "newSocialKeys",
+                "type": "address[]"
+            },
+            {
+                "internalType": "uint64",
+                "name": "newSocialThreshold",
+                "type": "uint64"
+            }
+        ],
+        "name": "updateRecoverySettings",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "recoveryApprover",
+                "type": "address"
+            }
+        ],
+        "name": "recoveryApproval",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "socialApprover",
+                "type": "address"
+            }
+        ],
+        "name": "socialRecoveryApproval",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "recoveryApprover",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "delegator",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes",
+                "name": "delegationData",
+                "type": "bytes"
+            }
+        ],
+        "name": "delegatedRecoveryApproval",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "socialApprover",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "delegator",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes",
+                "name": "delegationData",
+                "type": "bytes"
+            }
+        ],
+        "name": "delegatedSocialRecoveryApproval",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "executeRecovery",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getRecoveryStatus",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "isInitiated",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint64",
+                "name": "timestamp",
+                "type": "uint64"
+            },
+            {
+                "internalType": "uint64",
+                "name": "recoveryThreshold",
+                "type": "uint64"
+            },
+            {
+                "internalType": "uint64",
+                "name": "socialThreshold",
+                "type": "uint64"
+            },
+            {
+                "internalType": "uint64",
+                "name": "approvalsCount",
+                "type": "uint64"
+            },
+            {
+                "internalType": "uint64",
+                "name": "socialApprovalsCount",
+                "type": "uint64"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bool",
+                "name": "stopped",
+                "type": "bool"
+            }
+        ],
+        "name": "setEmergencyStop",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address[]",
+                "name": "recoveryKeys",
+                "type": "address[]"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint64",
+                "name": "threshold",
+                "type": "uint64"
+            },
+            {
+                "indexed": false,
+                "internalType": "address[]",
+                "name": "socialKeys",
+                "type": "address[]"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint64",
+                "name": "socialThreshold",
+                "type": "uint64"
+            }
+        ],
+        "name": "RecoveryInitiated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "approver",
+                "type": "address"
+            }
+        ],
+        "name": "RecoveryApproved",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "approver",
+                "type": "address"
+            }
+        ],
+        "name": "SocialRecoveryApproved",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address[]",
+                "name": "recoveryKeys",
+                "type": "address[]"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint64",
+                "name": "recoveryThreshold",
+                "type": "uint64"
+            },
+            {
+                "indexed": false,
+                "internalType": "address[]",
+                "name": "socialKeys",
+                "type": "address[]"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint64",
+                "name": "socialThreshold",
+                "type": "uint64"
+            }
+        ],
+        "name": "RecoverySettingsUpdated",
+        "type": "event"
+    }
+]

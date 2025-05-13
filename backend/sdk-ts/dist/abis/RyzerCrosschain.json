@@ -1,0 +1,781 @@
+[
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "initialUser",
+                "type": "address"
+            },
+            {
+                "internalType": "uint64",
+                "name": "userId",
+                "type": "uint64"
+            },
+            {
+                "internalType": "uint64",
+                "name": "threshold",
+                "type": "uint64"
+            },
+            {
+                "internalType": "address[]",
+                "name": "custodians",
+                "type": "address[]"
+            },
+            {
+                "internalType": "address[]",
+                "name": "brokers",
+                "type": "address[]"
+            },
+            {
+                "internalType": "address",
+                "name": "entryPoint",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "paymaster",
+                "type": "address"
+            },
+            {
+                "internalType": "address payable",
+                "name": "timelock",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_ccipRouter",
+                "type": "address"
+            },
+            {
+                "internalType": "address[]",
+                "name": "_oracleAggregators",
+                "type": "address[]"
+            },
+            {
+                "internalType": "address",
+                "name": "_feeRecipient",
+                "type": "address"
+            },
+            {
+                "internalType": "uint64",
+                "name": "_feePercentage",
+                "type": "uint64"
+            }
+        ],
+        "name": "initialize",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "targetChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "adapterParams",
+                "type": "bytes"
+            }
+        ],
+        "name": "transferERC20",
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "targetChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "adapterParams",
+                "type": "bytes"
+            }
+        ],
+        "name": "transferERC721",
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "tokenIds",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "amounts",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "targetChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "adapterParams",
+                "type": "bytes"
+            }
+        ],
+        "name": "transferERC1155",
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "targetChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "adapterParams",
+                "type": "bytes"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "tokenIds",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "amounts",
+                "type": "uint256[]"
+            }
+        ],
+        "name": "estimateCrossChainFee",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "chainId",
+                "type": "uint256"
+            }
+        ],
+        "name": "isChainSupported",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "uint64",
+                        "name": "complianceLevel",
+                        "type": "uint64"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "tokenStandard",
+                        "type": "bytes4"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isLocked",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isEmergencyStopped",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "approvalExpiry",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct TokenMetadata",
+                "name": "metadata",
+                "type": "tuple"
+            }
+        ],
+        "name": "addSupportedToken",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "removeSupportedToken",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "adapter",
+                "type": "address"
+            },
+            {
+                "internalType": "uint32",
+                "name": "priority",
+                "type": "uint32"
+            }
+        ],
+        "name": "addCrossChainAdapter",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "adapter",
+                "type": "address"
+            }
+        ],
+        "name": "removeCrossChainAdapter",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "adapter",
+                "type": "address"
+            },
+            {
+                "internalType": "uint32",
+                "name": "priority",
+                "type": "uint32"
+            }
+        ],
+        "name": "updateAdapterPriority",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "adapterAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "success",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "latency",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateAdapterPerformance",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "newFeeRecipient",
+                "type": "address"
+            }
+        ],
+        "name": "setFeeRecipient",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint64",
+                "name": "newFeePercentage",
+                "type": "uint64"
+            }
+        ],
+        "name": "setFeePercentage",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "start",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "limit",
+                "type": "uint256"
+            }
+        ],
+        "name": "getTransactionHistory",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "bytes32",
+                        "name": "txHash",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "sender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "recipient",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "token",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint128",
+                        "name": "packedAmountTimestamp",
+                        "type": "uint128"
+                    },
+                    {
+                        "internalType": "uint64",
+                        "name": "packedMeta",
+                        "type": "uint64"
+                    },
+                    {
+                        "internalType": "uint128",
+                        "name": "fee",
+                        "type": "uint128"
+                    }
+                ],
+                "internalType": "struct PackedTransactionLog.Log[]",
+                "name": "",
+                "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "adapterPerformance",
+        "outputs": [
+            {
+                "internalType": "uint128",
+                "name": "successCount",
+                "type": "uint128"
+            },
+            {
+                "internalType": "uint128",
+                "name": "failureCount",
+                "type": "uint128"
+            },
+            {
+                "internalType": "uint128",
+                "name": "totalLatency",
+                "type": "uint128"
+            },
+            {
+                "internalType": "uint128",
+                "name": "transferCount",
+                "type": "uint128"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "ccipRouter",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "feeRecipient",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "feePercentage",
+        "outputs": [
+            {
+                "internalType": "uint64",
+                "name": "",
+                "type": "uint64"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "isTokenSupported",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "blacklistedTokens",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "tokenMetadata",
+        "outputs": [
+            {
+                "internalType": "uint64",
+                "name": "complianceLevel",
+                "type": "uint64"
+            },
+            {
+                "internalType": "bytes4",
+                "name": "tokenStandard",
+                "type": "bytes4"
+            },
+            {
+                "internalType": "bool",
+                "name": "isLocked",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "isEmergencyStopped",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "approvalExpiry",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "chainId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "fee",
+                "type": "uint256"
+            }
+        ],
+        "name": "CrossChainFeeCached",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "adapter",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint32",
+                "name": "priority",
+                "type": "uint32"
+            }
+        ],
+        "name": "CrossChainAdapterAdded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "adapter",
+                "type": "address"
+            }
+        ],
+        "name": "CrossChainAdapterRemoved",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "adapter",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint32",
+                "name": "priority",
+                "type": "uint32"
+            }
+        ],
+        "name": "CrossChainAdapterPriorityUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "adapter",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "bool",
+                "name": "success",
+                "type": "bool"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "latency",
+                "type": "uint256"
+            }
+        ],
+        "name": "AdapterPerformanceUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "aggregator",
+                "type": "address"
+            }
+        ],
+        "name": "OracleAggregatorUsed",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "newFeeRecipient",
+                "type": "address"
+            }
+        ],
+        "name": "FeeRecipientUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint64",
+                "name": "newFeePercentage",
+                "type": "uint64"
+            }
+        ],
+        "name": "FeePercentageUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "bytes32",
+                "name": "txHash",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "reason",
+                "type": "string"
+            }
+        ],
+        "name": "TransferFailed",
+        "type": "event"
+    }
+]

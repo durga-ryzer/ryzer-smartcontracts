@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "declaration": true,
+    "outDir": "./dist",
+    "strict": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "noImplicitAny": false,
+    "allowJs": true,
+    "noEmitOnError": false,
+    "ignoreDeprecations": "5.0",
+    "noPropertyAccessFromIndexSignature": false,
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "checkJs": false,
+    "skipDefaultLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "noErrorTruncation": true,
+    "noImplicitThis": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "ts-node": {
+    "transpileOnly": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
