@@ -929,19 +929,19 @@ export class CrossChainService {
   }
 }
 
-// Export singleton instance
-export default new CrossChainService({
-  databaseName: process.env.DB_NAME || 'cross_chain_db',
+// Create and export a singleton instance
+const crossChainService = new CrossChainService({
+  databaseName: 'ryzer-crosschain-db',
   hsmConfig: {
-    provider: HSMProviderType.CUSTOM,
+    provider: 'aws',
     credentials: {
-      pin: process.env.HSM_PIN || '123456',
-      libraryPath: process.env.HSM_LIBRARY_PATH || '/usr/lib/pkcs11.so',
-    },
-    options: { fipsCompliance: true },
-  },
-  tenantId: process.env.TENANT_ID,
+      pin: process.env.HSM_PIN || '',
+      libraryPath: process.env.HSM_LIBRARY_PATH || '',
+    }
+  }
 });
+
+export default crossChainService;
 
 const getProvider = (chainId: number): providers.JsonRpcProvider => {
   const network = NETWORK_CONFIG[chainId.toString()];

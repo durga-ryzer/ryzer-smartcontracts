@@ -369,7 +369,7 @@ export const getRecentAuditLogs = async (limit: number = 100): Promise<AuditLog[
     let logs = await store.getAll();
 
     // Transform and sort logs
-    logs = logs
+    const transformedLogs = logs
       .map(log => ({
         ...log,
         performedBy: log.userId,
@@ -377,9 +377,9 @@ export const getRecentAuditLogs = async (limit: number = 100): Promise<AuditLog[
         walletAddress: log.details?.walletAddress
       }))
       .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, limit) as AuditLog[];
+      .slice(0, limit);
 
-    return logs;
+    return transformedLogs;
   } catch (error) {
     logger.error('Error getting recent audit logs:', error);
     throw error;
@@ -399,16 +399,16 @@ export const getUserAuditLogs = async (userId: string): Promise<AuditLog[]> => {
     let logs = await store.getAll();
 
     // Filter by userId and transform
-    logs = logs
+    const transformedLogs = logs
       .filter(log => log.userId === userId)
       .map(log => ({
         ...log,
         performedBy: log.userId,
         targetType: log.details?.targetType || 'unknown',
         walletAddress: log.details?.walletAddress
-      })) as AuditLog[];
+      }));
 
-    return logs;
+    return transformedLogs;
   } catch (error) {
     logger.error(`Error getting audit logs for user ${userId}:`, error);
     throw error;

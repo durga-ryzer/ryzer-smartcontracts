@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { ApiError } from './errorHandler';
 import { logger } from '../utils/logger';
 import { UserRole } from '../services/rbac';
-import { createAuditLog } from '../services/audit';
+import { createAuditLog, AuditLog } from '../services/audit';
 
 // Define user interface
 export interface AuthUser {
@@ -48,18 +48,23 @@ export const generateToken = (user: AuthUser, ipAddress?: string): string => {
     };
     
     // Create audit log for login
-    createAuditLog({
+    const auditLogData: Omit<AuditLog, "id" | "timestamp"> = {
       action: 'user_login',
+      userId: user.walletAddress,
       performedBy: user.walletAddress,
-      performedByIp: ipAddress,
+      category: 'auth',
+      status: 'success',
       targetId: user.walletAddress,
       targetType: 'user',
       sessionId,
-      metadata: {
+      ipAddress: ipAddress,
+      details: {
         roles: user.roles,
         isAdmin: user.isAdmin
       }
-    }).catch(error => {
+    };
+    
+    createAuditLog(auditLogData).catch(error => {
       logger.error('Error creating login audit log:', error);
     });
     
@@ -135,19 +140,24 @@ export const verifyToken = (token: string, ipAddress?: string): AuthUser => {
       logger.warn(`IP address mismatch for user ${decoded.walletAddress}: ${decoded.ipAddress} vs ${ipAddress}`);
       
       // Create audit log for suspicious activity
-      createAuditLog({
+      const suspiciousActivityLog: Omit<AuditLog, "id" | "timestamp"> = {
         action: 'suspicious_activity',
+        userId: decoded.walletAddress,
         performedBy: decoded.walletAddress,
-        performedByIp: ipAddress,
+        category: 'security',
+        status: 'failure',
         targetId: decoded.walletAddress,
         targetType: 'user',
         sessionId: decoded.sessionId,
-        metadata: {
+        ipAddress: ipAddress,
+        details: {
           reason: 'ip_address_change',
           originalIp: decoded.ipAddress,
           newIp: ipAddress
         }
-      }).catch(error => {
+      };
+      
+      createAuditLog(suspiciousActivityLog).catch(error => {
         logger.error('Error creating suspicious activity audit log:', error);
       });
       
@@ -182,19 +192,24 @@ export const authorize = (requiredRoles: UserRole[]) => {
       
       if (!hasRequiredRole) {
         // Create audit log for unauthorized access attempt
-        await createAuditLog({
+        const unauthorizedLog: Omit<AuditLog, "id" | "timestamp"> = {
           action: 'unauthorized_access',
+          userId: req.user.walletAddress,
           performedBy: req.user.walletAddress,
-          performedByIp: req.ip,
+          category: 'auth',
+          status: 'failure',
           targetId: req.originalUrl,
           targetType: 'endpoint',
           sessionId: req.user.sessionId,
-          metadata: {
+          ipAddress: req.ip,
+          details: {
             requiredRoles,
             userRoles: req.user.roles,
             method: req.method
           }
-        }).catch(error => {
+        };
+        
+        createAuditLog(unauthorizedLog).catch(error => {
           logger.error('Error creating unauthorized access audit log:', error);
         });
         
@@ -230,19 +245,24 @@ export const requirePermission = (permission: import('../services/rbac').Permiss
       
       if (!permitted) {
         // Create audit log for permission denied
-        await createAuditLog({
+        const permissionDeniedLog: Omit<AuditLog, "id" | "timestamp"> = {
           action: 'permission_denied',
+          userId: req.user.walletAddress,
           performedBy: req.user.walletAddress,
-          performedByIp: req.ip,
+          category: 'auth',
+          status: 'failure',
           targetId: req.originalUrl,
           targetType: 'endpoint',
           sessionId: req.user.sessionId,
-          metadata: {
+          ipAddress: req.ip,
+          details: {
             requiredPermission: permission,
             method: req.method,
             walletAddress
           }
-        }).catch(error => {
+        };
+        
+        createAuditLog(permissionDeniedLog).catch(error => {
           logger.error('Error creating permission denied audit log:', error);
         });
         

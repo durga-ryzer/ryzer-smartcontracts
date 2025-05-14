@@ -2,12 +2,12 @@ import { logger } from '../utils/logger';
 import { getDatabase } from '../config/database';
 import { SUPPORTED_NETWORKS } from '../config/networks';
 import { createPublicClient, http, parseEther, formatEther } from 'viem';
-import { smartAccountClients, pimlicoClients, providers } from '../services/relayer';
+import relayerService from '../services/relayer';
 
 // Import services
 import * as batchingService from '../services/batching';
 import * as simulationService from '../services/simulation';
-import * as crossChainService from '../services/crosschain';
+import crossChainService from '../services/crosschain';
 import * as recoveryService from '../services/recovery';
 
 // SDK Configuration
@@ -86,7 +86,7 @@ export class RyzerWalletSDK {
       await simulationService.initializeSimulationService();
       
       // Initialize cross-chain service
-      await crossChainService.initializeCrossChainService();
+      await crossChainService.initialize();
       
       // Initialize recovery service
       await recoveryService.initializeRecoveryService();
@@ -206,7 +206,7 @@ export class RyzerWalletSDK {
    * Get SDK status
    * @returns SDK status
    */
-  public getStatus(): Record<string, any> {
+  public async getStatus(): Promise<Record<string, any>> {
     this.checkInitialized();
     
     return {
@@ -215,7 +215,7 @@ export class RyzerWalletSDK {
       services: {
         batching: batchingService.getBatchingServiceStatus(),
         simulation: simulationService.getSimulationServiceStatus(),
-        crossChain: crossChainService.getCrossChainServiceStatus(),
+        crossChain: await crossChainService.getCrossChainServiceStatus(),
         recovery: recoveryService.getRecoveryServiceStatus(),
       },
       cacheSize: Object.keys(sdkCache).length,
@@ -480,17 +480,17 @@ export class RyzerWalletSDK {
       }
       
       // Get all supported bridge routes
-      const allRoutes = crossChainService.getSupportedBridgeRoutes();
+      const routes = crossChainService.getSupportedBridgeRoutes();
       
       // Filter routes based on parameters
-      const routes = allRoutes.filter(route => 
+      const filteredRoutes = routes.filter(route => 
         (sourceChainId === 0 || route.sourceChainId === sourceChainId) &&
         (destinationChainId === 0 || route.destinationChainId === destinationChainId)
       );
       
-      this.setCachedData(cacheKey, routes);
+      this.setCachedData(cacheKey, filteredRoutes);
       
-      return routes;
+      return filteredRoutes;
     } catch (error) {
       logger.error(`Error getting bridge routes from chain ${sourceChainId} to ${destinationChainId} for token ${token}:`, error);
       return [];
@@ -528,7 +528,8 @@ export class RyzerWalletSDK {
         recipient,
         token,
         amount,
-        bridgeProvider as any
+        bridgeProvider as any,
+        'default-hsm-key' // Add HSM key ID parameter
       );
     } catch (error) {
       logger.error(`Error executing cross-chain transaction from ${sender} to ${recipient} on chains ${sourceChainId} -> ${destinationChainId}:`, error);
