@@ -1,7 +1,6 @@
 import { logger } from '../utils/logger';
 import { getDatabase } from '../config/database';
 import { SUPPORTED_NETWORKS } from '../config/networks';
-import { createPublicClient, http, parseEther, formatEther } from 'viem';
 import relayerService from '../services/relayer';
 
 // Import services
