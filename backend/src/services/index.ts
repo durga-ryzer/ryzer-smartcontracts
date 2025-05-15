@@ -81,7 +81,7 @@ export class ServiceManager {
   private config: ServiceManagerConfig;
   private retryUtility: RetryUtility;
   private operationId: string = uuidv4();
-  private blockchainProvider: Web3Provider | null = null;
+  private blockchainProvider: ethers.providers.JsonRpcProvider | null = null;
   private dbPool: Pool | null = null;
   private relayerWallet: ethers.Wallet | null = null;
   private socketServer: Server | null = null;
@@ -132,9 +132,7 @@ export class ServiceManager {
       logger.info('Initializing all services', { operationId: this.operationId, tenantId: this.config.tenantId });
 
       // Initialize blockchain provider
-      this.blockchainProvider = new Web3Provider(
-        new ethers.providers.JsonRpcProvider(this.config.blockchainProviderUrl)
-      );
+      this.blockchainProvider = new ethers.providers.JsonRpcProvider(this.config.blockchainProviderUrl);
       this.relayerWallet = new ethers.Wallet(this.config.relayerPrivateKey, this.blockchainProvider);
 
       // Initialize database pool
@@ -167,7 +165,7 @@ export class ServiceManager {
       });
 
       logger.info('All services initialized successfully', { operationId: this.operationId });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to initialize services', { operationId: this.operationId, error });
       await this.updateServiceStatusOnError(error);
       throw new Error(`Service initialization failed: ${error.message}`);
@@ -256,7 +254,7 @@ export class ServiceManager {
       });
 
       logger.info('All services shut down successfully', { operationId: this.operationId });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error shutting down services', { operationId: this.operationId, error });
       await this.updateServiceStatusOnError(error);
       throw new Error(`Service shutdown failed: ${error.message}`);
@@ -331,7 +329,7 @@ export class ServiceManager {
       logger.debug('Services health check completed', { operationId: this.operationId, statuses: updatedStatuses });
 
       return updatedStatuses;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error checking services health', { operationId: this.operationId, error });
       throw new Error(`Health check failed: ${error.message}`);
     }
@@ -613,7 +611,7 @@ export class ServiceManager {
   private async initializeService(service: ServiceName, initFn: () => Promise<void>): Promise<void> {
     try {
       await initFn();
-    } catch (error) {
+    } catch (error:any) {
       logger.error(`Failed to initialize ${service} service`, { operationId: this.operationId, error });
       this.serviceStatuses[service] = {
         ...this.serviceStatuses[service],
@@ -634,7 +632,7 @@ export class ServiceManager {
   private async shutdownService(service: ServiceName, shutdownFn: () => Promise<void>): Promise<void> {
     try {
       await shutdownFn();
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to shut down ${service} service`, { operationId: this.operationId, error });
       this.serviceStatuses[service] = {
         ...this.serviceStatuses[service],
@@ -660,7 +658,7 @@ export class ServiceManager {
     try {
       const healthy = await healthCheckFn();
       return { service, healthy };
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Health check failed for ${service} service`, { operationId: this.operationId, error });
       return { service, healthy: false, error: error.message };
     }

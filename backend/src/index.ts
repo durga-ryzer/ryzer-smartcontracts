@@ -9,11 +9,11 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import path from 'path';
 
-import { connectDatabase, closeDatabase } from './config/database';
+import { getDatabase, closeDatabase } from './config/database';
 import { logger } from './utils/logger';
 import { errorHandler } from './middlewares/errorHandler';
 import { apiRouter } from './api';
-import { initializeServices, shutdownServices } from './services';
+import { ServiceManager, ServiceManagerConfig } from './services';
 import { setupWebSocketHandlers } from './api/websocket';
 
 // Load environment variables
@@ -83,7 +83,10 @@ const swaggerOptions = {
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Serve swagger docs
+app.use('/api-docs', ...swaggerUi.serve);
+app.get('/api-docs', swaggerUi.setup(swaggerSpec));
 
 // API routes
 app.use('/api', apiRouter);
@@ -111,14 +114,30 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+// Initialize services
+const serviceConfig: ServiceManagerConfig = {
+  blockchainProviderUrl: process.env.BLOCKCHAIN_PROVIDER_URL || '',
+  databaseConfig: {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    database: process.env.DB_NAME || 'ryzer',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || '',
+  },
+  relayerPrivateKey: process.env.RELAYER_PRIVATE_KEY || '',
+  socketServer: io,
+};
+
+const serviceManager = new ServiceManager(serviceConfig);
+
 // Start server
 const startServer = async () => {
   try {
     // Connect to database
-    await connectDatabase();
+    await getDatabase();
     
     // Initialize all services
-    await initializeServices();
+    await serviceManager.initializeServices();
     
     // Start HTTP server
     server.listen(port, () => {
@@ -130,6 +149,7 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
