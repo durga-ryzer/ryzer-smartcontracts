@@ -1,4 +1,5 @@
-node_modules
+# Ensure node_modules is ignored
+node_modules/
 .env
 .env.local
 .env.development.local
