@@ -5,7 +5,6 @@ import { RetryUtility } from '../utils/retry';
 import { Server, Socket } from 'socket.io';
 import { ethers } from 'ethers';
 import { Pool, PoolClient } from 'pg'; // PostgreSQL client for indexer and analytics
-import { Web3Provider } from '@ethersproject/providers';
 
 // Enum for service names
 export enum ServiceName {
@@ -81,7 +80,7 @@ export class ServiceManager {
   private config: ServiceManagerConfig;
   private retryUtility: RetryUtility;
   private operationId: string = uuidv4();
-  private blockchainProvider: ethers.providers.JsonRpcProvider | null = null;
+  private blockchainProvider: ethers.JsonRpcProvider | null = null;
   private dbPool: Pool | null = null;
   private relayerWallet: ethers.Wallet | null = null;
   private socketServer: Server | null = null;
@@ -113,7 +112,7 @@ export class ServiceManager {
     if (!config.databaseConfig || !Object.values(config.databaseConfig).every(val => val)) {
       throw new Error('Complete database configuration is required');
     }
-    if (!config.relayerPrivateKey || !ethers.utils.isHexString(config.relayerPrivateKey, 32)) {
+    if (!config.relayerPrivateKey || !ethers.isHexString(config.relayerPrivateKey)) {
       throw new Error('Valid relayer private key is required');
     }
   }
@@ -132,7 +131,7 @@ export class ServiceManager {
       logger.info('Initializing all services', { operationId: this.operationId, tenantId: this.config.tenantId });
 
       // Initialize blockchain provider
-      this.blockchainProvider = new ethers.providers.JsonRpcProvider(this.config.blockchainProviderUrl);
+      this.blockchainProvider = new ethers.JsonRpcProvider(this.config.blockchainProviderUrl);
       this.relayerWallet = new ethers.Wallet(this.config.relayerPrivateKey, this.blockchainProvider);
 
       // Initialize database pool
@@ -287,7 +286,7 @@ export class ServiceManager {
         this.checkServiceHealth(ServiceName.RELAYER, async () => {
           if (!this.relayerWallet) return false;
           const balance = await this.blockchainProvider!.getBalance(this.relayerWallet.address);
-          return balance.gt(0); // Ensure relayer has funds
+          return balance > 0n; // Compare with BigInt zero
         }),
         this.checkServiceHealth(ServiceName.INDEXER, async () => {
           if (!this.dbPool) return false;
@@ -347,19 +346,19 @@ export class ServiceManager {
       // Business logic: Relay a gasless transaction
       const relayTransaction = async (txData: TransactionData): Promise<string> => {
         try {
-          if (!ethers.utils.isAddress(txData.to) || !ethers.utils.isHexString(txData.data)) {
+          if (!ethers.isAddress(txData.to) || !ethers.isHexString(txData.data)) {
             throw new Error('Invalid transaction data');
           }
 
           const tx = {
             to: txData.to,
-            value: ethers.utils.parseEther(txData.value || '0'),
+            value: ethers.parseEther(txData.value || '0'),
             data: txData.data,
-            gasLimit: ethers.BigNumber.from(txData.gasLimit || '100000'),
+            gasLimit: BigInt(txData.gasLimit || '100000'),
           };
 
           const signedTx = await this.relayerWallet!.signTransaction(tx);
-          const txResponse = await this.blockchainProvider!.sendTransaction(signedTx);
+          const txResponse = await this.blockchainProvider!.broadcastTransaction(signedTx);
 
           await createAuditLog({
             action: 'transaction_relayed',
@@ -409,17 +408,19 @@ export class ServiceManager {
       const indexTransactions = async () => {
         this.blockchainProvider!.on('block', async (blockNumber: number) => {
           try {
-            const block = await this.blockchainProvider!.getBlockWithTransactions(blockNumber);
+            const block = await this.blockchainProvider!.getBlock(blockNumber, true);
+            if (!block) return;
+            
             const client = await this.dbPool!.connect();
 
             try {
-              for (const tx of block.transactions) {
+              for (const tx of block.prefetchedTransactions) {
                 if (tx.to && tx.from) {
                   const txData: TransactionData = {
                     id: tx.hash,
                     walletAddress: tx.from,
                     to: tx.to,
-                    value: ethers.utils.formatEther(tx.value),
+                    value: ethers.formatEther(tx.value),
                     data: tx.data,
                     gasLimit: tx.gasLimit.toString(),
                     timestamp: block.timestamp * 1000,
@@ -450,7 +451,7 @@ export class ServiceManager {
                     targetType: 'transaction',
                     walletAddress: txData.walletAddress,
                     tenantId: txData.tenantId,
-                    metadata: { blockNumber, txHash: tx.hash },
+                    metadata: { blockNumber, txHash: txData.id },
                   });
                 }
               }
@@ -489,7 +490,7 @@ export class ServiceManager {
         logger.debug('Client connected to notification service', { socketId: socket.id });
 
         socket.on('subscribe_transactions', (walletAddress: string) => {
-          if (!ethers.utils.isAddress(walletAddress)) {
+          if (!ethers.isAddress(walletAddress)) {
             socket.emit('error', { message: 'Invalid wallet address' });
             return;
           }

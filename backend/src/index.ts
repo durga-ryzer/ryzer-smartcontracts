@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { ErrorRequestHandler } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -101,7 +101,7 @@ app.get('/health', (req, res) => {
 });
 
 // Error handling middleware
-app.use(errorHandler);
+app.use(errorHandler as ErrorRequestHandler);
 
 // Serve static files from the frontend build directory in production
 if (process.env.NODE_ENV === 'production') {
