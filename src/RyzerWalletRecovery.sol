@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.29;
+pragma solidity ^0.8.29;
 
 import "./RyzerWalletCore.sol";
 import "./RyzerWalletLibraries.sol";
@@ -9,19 +9,11 @@ contract Recovery is RyzerWalletCore {
 
     WalletRecovery.RecoveryData private recoveryData;
 
-    event RecoveryInitiated(
-        address[] recoveryKeys,
-        uint64 threshold,
-        address[] socialKeys,
-        uint64 socialThreshold
-    );
+    event RecoveryInitiated(address[] recoveryKeys, uint64 threshold, address[] socialKeys, uint64 socialThreshold);
     event RecoveryApproved(address indexed approver);
     event SocialRecoveryApproved(address indexed approver);
     event RecoverySettingsUpdated(
-        address[] recoveryKeys,
-        uint64 recoveryThreshold,
-        address[] socialKeys,
-        uint64 socialThreshold
+        address[] recoveryKeys, uint64 recoveryThreshold, address[] socialKeys, uint64 socialThreshold
     );
 
     error InsufficientApprovals();
@@ -33,9 +25,7 @@ contract Recovery is RyzerWalletCore {
         _;
     }
 
-    function setEmergencyStop(
-        bool stopped
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+    function setEmergencyStop(bool stopped) external override onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
         emergencyStopped = stopped;
         if (stopped) _pause();
         else _unpause();
@@ -48,40 +38,17 @@ contract Recovery is RyzerWalletCore {
         address[] calldata socialKeys,
         uint64 socialThreshold
     ) external onlyRole(DEFAULT_ADMIN_ROLE) notEmergencyStopped initializer {
-        require(
-            recoveryKeys.length > 0 && recoveryThreshold <= recoveryKeys.length,
-            "Invalid recovery settings"
-        );
-        require(
-            socialThreshold <= socialKeys.length,
-            "Invalid social threshold"
-        );
-        require(
-            recoveryKeys.length <= 50 && socialKeys.length <= 50,
-            "Too many keys"
-        );
+        require(recoveryKeys.length > 0 && recoveryThreshold <= recoveryKeys.length, "Invalid recovery settings");
+        require(socialThreshold <= socialKeys.length, "Invalid social threshold");
+        require(recoveryKeys.length <= 50 && socialKeys.length <= 50, "Too many keys");
 
-        for (uint i = 0; i < recoveryKeys.length; i++) {
+        for (uint256 i = 0; i < recoveryKeys.length; i++) {
             require(recoveryKeys[i] != address(0), "Invalid recovery key");
-            _grantRoleWithExpiration(
-                keccak256("RECOVERY_ROLE"),
-                recoveryKeys[i],
-                type(uint64).max
-            );
+            _grantRoleWithExpiration(keccak256("RECOVERY_ROLE"), recoveryKeys[i], type(uint64).max);
         }
 
-        recoveryData.initiate(
-            recoveryKeys,
-            recoveryThreshold,
-            socialKeys,
-            socialThreshold
-        );
-        emit RecoveryInitiated(
-            recoveryKeys,
-            recoveryThreshold,
-            socialKeys,
-            socialThreshold
-        );
+        recoveryData.initiate(recoveryKeys, recoveryThreshold, socialKeys, socialThreshold);
+        emit RecoveryInitiated(recoveryKeys, recoveryThreshold, socialKeys, socialThreshold);
     }
 
     function updateRecoverySettings(
@@ -91,65 +58,38 @@ contract Recovery is RyzerWalletCore {
         uint64 newSocialThreshold
     ) external onlyRole(DEFAULT_ADMIN_ROLE) notEmergencyStopped {
         require(
-            newRecoveryKeys.length > 0 &&
-                newRecoveryThreshold <= newRecoveryKeys.length,
-            "Invalid recovery settings"
+            newRecoveryKeys.length > 0 && newRecoveryThreshold <= newRecoveryKeys.length, "Invalid recovery settings"
         );
-        require(
-            newSocialThreshold <= newSocialKeys.length,
-            "Invalid social threshold"
-        );
-        require(
-            newRecoveryKeys.length <= 50 && newSocialKeys.length <= 50,
-            "Too many keys"
-        );
+        require(newSocialThreshold <= newSocialKeys.length, "Invalid social threshold");
+        require(newRecoveryKeys.length <= 50 && newSocialKeys.length <= 50, "Too many keys");
 
         // Revoke existing recovery roles
-        for (uint i = 0; i < recoveryData.recoveryKeys.length; i++) {
-            revokeRole(
-                keccak256("RECOVERY_ROLE"),
-                recoveryData.recoveryKeys[i]
-            );
+        for (uint256 i = 0; i < recoveryData.recoveryKeys.length; i++) {
+            revokeRole(keccak256("RECOVERY_ROLE"), recoveryData.recoveryKeys[i]);
         }
 
         // Grant new recovery roles
-        for (uint i = 0; i < newRecoveryKeys.length; i++) {
+        for (uint256 i = 0; i < newRecoveryKeys.length; i++) {
             require(newRecoveryKeys[i] != address(0), "Invalid recovery key");
-            _grantRoleWithExpiration(
-                keccak256("RECOVERY_ROLE"),
-                newRecoveryKeys[i],
-                type(uint64).max
-            );
+            _grantRoleWithExpiration(keccak256("RECOVERY_ROLE"), newRecoveryKeys[i], type(uint64).max);
         }
 
         // Reset approvals and update recovery data
-        for (uint i = 0; i < recoveryData.recoveryKeys.length; i++) {
+        for (uint256 i = 0; i < recoveryData.recoveryKeys.length; i++) {
             recoveryData.hasApproved[recoveryData.recoveryKeys[i]] = false;
         }
-        for (uint i = 0; i < recoveryData.socialKeys.length; i++) {
+        for (uint256 i = 0; i < recoveryData.socialKeys.length; i++) {
             recoveryData.hasSocialApproved[recoveryData.socialKeys[i]] = false;
         }
         recoveryData.approvals = 0;
         recoveryData.socialApprovals = 0;
         recoveryData.isInitiated = false;
 
-        recoveryData.initiate(
-            newRecoveryKeys,
-            newRecoveryThreshold,
-            newSocialKeys,
-            newSocialThreshold
-        );
-        emit RecoverySettingsUpdated(
-            newRecoveryKeys,
-            newRecoveryThreshold,
-            newSocialKeys,
-            newSocialThreshold
-        );
+        recoveryData.initiate(newRecoveryKeys, newRecoveryThreshold, newSocialKeys, newSocialThreshold);
+        emit RecoverySettingsUpdated(newRecoveryKeys, newRecoveryThreshold, newSocialKeys, newSocialThreshold);
     }
 
-    function recoveryApproval(
-        address recoveryApprover
-    )
+    function recoveryApproval(address recoveryApprover)
         external
         notBlacklisted(msg.sender)
         rateLimited(msg.sender)
@@ -160,27 +100,18 @@ contract Recovery is RyzerWalletCore {
         emit RecoveryApproved(recoveryApprover);
     }
 
-    function socialRecoveryApproval(
-        address socialApprover
-    )
+    function socialRecoveryApproval(address socialApprover)
         external
         notBlacklisted(msg.sender)
         rateLimited(msg.sender)
         notEmergencyStopped
         nonReentrant
     {
-        require(
-            recoveryData.approveSocial(socialApprover),
-            "Social approval failed"
-        );
+        require(recoveryData.approveSocial(socialApprover), "Social approval failed");
         emit SocialRecoveryApproved(socialApprover);
     }
 
-    function delegatedRecoveryApproval(
-        address recoveryApprover,
-        address delegator,
-        bytes calldata delegationData
-    )
+    function delegatedRecoveryApproval(address recoveryApprover, address delegator, bytes calldata delegationData)
         external
         whenNotPaused
         nonReentrant
@@ -191,18 +122,10 @@ contract Recovery is RyzerWalletCore {
     {
         require(recoveryData.approve(recoveryApprover), "Approval failed");
         emit RecoveryApproved(recoveryApprover);
-        emit DelegatedOperation(
-            delegator,
-            msg.sender,
-            "DelegatedRecoveryApproval"
-        );
+        emit DelegatedOperation(delegator, msg.sender, "DelegatedRecoveryApproval");
     }
 
-    function delegatedSocialRecoveryApproval(
-        address socialApprover,
-        address delegator,
-        bytes calldata delegationData
-    )
+    function delegatedSocialRecoveryApproval(address socialApprover, address delegator, bytes calldata delegationData)
         external
         whenNotPaused
         nonReentrant
@@ -211,37 +134,16 @@ contract Recovery is RyzerWalletCore {
         notEmergencyStopped
         verifyDelegation(delegator, delegationData)
     {
-        require(
-            recoveryData.approveSocial(socialApprover),
-            "Social approval failed"
-        );
+        require(recoveryData.approveSocial(socialApprover), "Social approval failed");
         emit SocialRecoveryApproved(socialApprover);
-        emit DelegatedOperation(
-            delegator,
-            msg.sender,
-            "DelegatedSocialRecoveryApproval"
-        );
+        emit DelegatedOperation(delegator, msg.sender, "DelegatedSocialRecoveryApproval");
     }
 
-    function executeRecovery()
-        external
-        onlyRole(CUSTODIAN_ROLE)
-        nonReentrant
-        notEmergencyStopped
-    {
+    function executeRecovery() external onlyRole(CUSTODIAN_ROLE) nonReentrant notEmergencyStopped {
         require(recoveryData.isInitiated, "Not initiated");
-        require(
-            recoveryData.approvals >= recoveryData.recoveryThreshold,
-            "Insufficient approvals"
-        );
-        require(
-            recoveryData.socialApprovals >= recoveryData.socialThreshold,
-            "Insufficient social approvals"
-        );
-        require(
-            block.timestamp <= recoveryData.recoveryTimestamp + 7 days,
-            "Expired"
-        );
+        require(recoveryData.approvals >= recoveryData.recoveryThreshold, "Insufficient approvals");
+        require(recoveryData.socialApprovals >= recoveryData.socialThreshold, "Insufficient social approvals");
+        require(block.timestamp <= recoveryData.recoveryTimestamp + 7 days, "Expired");
 
         recoveryData.isInitiated = false;
     }

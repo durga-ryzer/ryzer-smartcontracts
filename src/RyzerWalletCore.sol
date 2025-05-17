@@ -25,12 +25,9 @@ contract RyzerWalletCore is
 {
     bytes32 internal constant CUSTODIAN_ROLE = keccak256("CUSTODIAN_ROLE");
     bytes32 internal constant BROKER_ROLE = keccak256("BROKER_ROLE");
-    bytes32 internal constant SECURITY_ADMIN_ROLE =
-        keccak256("SECURITY_ADMIN_ROLE");
-    bytes32 internal constant TEE_VERIFIER_ROLE =
-        keccak256("TEE_VERIFIER_ROLE");
-    bytes32 internal constant TSS_OPERATOR_ROLE =
-        keccak256("TSS_OPERATOR_ROLE");
+    bytes32 internal constant SECURITY_ADMIN_ROLE = keccak256("SECURITY_ADMIN_ROLE");
+    bytes32 internal constant TEE_VERIFIER_ROLE = keccak256("TEE_VERIFIER_ROLE");
+    bytes32 internal constant TSS_OPERATOR_ROLE = keccak256("TSS_OPERATOR_ROLE");
     uint64 internal constant DEFAULT_ROLE_DURATION = 365 days;
     uint256 internal constant MAX_GAS_PER_OP = 1_000_000;
     uint256 internal constant RATE_LIMIT_BLOCKS = 10;
@@ -59,34 +56,19 @@ contract RyzerWalletCore is
 
     event WalletCreated(address indexed walletAddress);
     event DelegatedSignerSet(address indexed user, address indexed signer);
-    event MultiSignersSet(
-        address indexed user,
-        bytes32 merkleRoot,
-        uint256 threshold
-    );
+    event MultiSignersSet(address indexed user, bytes32 merkleRoot, uint256 threshold);
     // event UserBlacklisted(address indexed user, bool isBlacklisted);
     // event BatchOperationsExecuted(uint256 count);
     event EmergencyStop(bool stopped);
     event RoleRevoked(bytes32 indexed role, address indexed account);
     // event OperationRateLimited(address indexed user);
-    event DelegatedOperation(
-        address indexed delegator,
-        address indexed operator,
-        string operation
-    );
+    event DelegatedOperation(address indexed delegator, address indexed operator, string operation);
 
     // Military-grade security events
-    event MilitaryGradeWalletCreated(
-        address indexed wallet,
-        SecurityLevel level
-    );
+    event MilitaryGradeWalletCreated(address indexed wallet, SecurityLevel level);
     event SecurityConfigUpdated(address indexed wallet, SecurityLevel level);
     event AccessPolicyUpdated(address indexed wallet);
-    event SecurityAuditRecorded(
-        address indexed wallet,
-        string action,
-        bool success
-    );
+    event SecurityAuditRecorded(address indexed wallet, string action, bool success);
     event TEEAttestationVerified(address indexed wallet, bool verified);
     event AnomalyDetected(address indexed wallet, uint256 score);
     //event WalletLocked(address indexed wallet, uint256 expiry);
@@ -114,10 +96,9 @@ contract RyzerWalletCore is
     // error WalletLocked();
     // error EmergencyLockdownActive();
 
-    bytes32 private constant USER_OPERATION_TYPEHASH =
-        keccak256(
-            "UserOperation(address sender,uint256 nonce,bytes callData,uint256 callGasLimit,uint256 verificationGasLimit,uint256 preVerificationGas,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas)"
-        );
+    bytes32 private constant USER_OPERATION_TYPEHASH = keccak256(
+        "UserOperation(address sender,uint256 nonce,bytes callData,uint256 callGasLimit,uint256 verificationGasLimit,uint256 preVerificationGas,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas)"
+    );
 
     struct InitParams {
         address initialUser;
@@ -134,22 +115,12 @@ contract RyzerWalletCore is
     }
 
     function initialize(InitParams memory params) public virtual initializer {
+        require(params.userId > 0 && params.threshold > 0 && params.initialUser != address(0), "Invalid params");
         require(
-            params.userId > 0 &&
-                params.threshold > 0 &&
-                params.initialUser != address(0),
-            "Invalid params"
-        );
-        require(
-            params.entryPoint != address(0) &&
-                params.paymaster != address(0) &&
-                params.timelock != address(0),
+            params.entryPoint != address(0) && params.paymaster != address(0) && params.timelock != address(0),
             "Invalid addresses"
         );
-        require(
-            params.custodians.length <= 50 && params.brokers.length <= 50,
-            "Too many roles"
-        );
+        require(params.custodians.length <= 50 && params.brokers.length <= 50, "Too many roles");
 
         __AccessControl_init();
         __UUPSUpgradeable_init();
@@ -187,11 +158,7 @@ contract RyzerWalletCore is
         address[] memory teeVerifiers,
         address[] memory tssOperators
     ) internal {
-        _grantRoleWithExpiration(
-            DEFAULT_ADMIN_ROLE,
-            _timelock,
-            type(uint64).max
-        );
+        _grantRoleWithExpiration(DEFAULT_ADMIN_ROLE, _timelock, type(uint64).max);
         _grantRoleWithExpiration(CUSTODIAN_ROLE, _msgSender, type(uint64).max);
         _assignRoles(CUSTODIAN_ROLE, custodians);
         _assignRoles(BROKER_ROLE, brokers);
@@ -201,7 +168,7 @@ contract RyzerWalletCore is
     }
 
     function _assignRoles(bytes32 role, address[] memory accounts) internal {
-        for (uint256 i = 0; i < accounts.length; ) {
+        for (uint256 i = 0; i < accounts.length;) {
             address account = accounts[i];
             require(account != address(0), "Invalid address");
             _grantRoleWithExpiration(role, account, type(uint64).max);
@@ -211,29 +178,19 @@ contract RyzerWalletCore is
         }
     }
 
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal view override onlyRole(DEFAULT_ADMIN_ROLE) {
+    function _authorizeUpgrade(address newImplementation) internal view override onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
-            TimelockController(timelock).isOperationPending(
-                keccak256(abi.encode(newImplementation))
-            ),
+            TimelockController(timelock).isOperationPending(keccak256(abi.encode(newImplementation))),
             "Upgrade not scheduled"
         );
     }
 
-    function hasRole(
-        bytes32 role,
-        address account
-    ) public view override returns (bool) {
+    function hasRole(bytes32 role, address account) public view override returns (bool) {
         // Generate unique key for role-account pair to check expiration
         bytes32 roleKey = keccak256(abi.encode(role, account));
 
         // Check if role has a non-zero expiration and has expired
-        if (
-            roleExpirations[roleKey] != 0 &&
-            block.timestamp > roleExpirations[roleKey]
-        ) {
+        if (roleExpirations[roleKey] != 0 && block.timestamp > roleExpirations[roleKey]) {
             return false;
         }
 
@@ -241,10 +198,7 @@ contract RyzerWalletCore is
         return super.hasRole(role, account);
     }
 
-    function revokeRole(
-        bytes32 role,
-        address account
-    ) public override onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+    function revokeRole(bytes32 role, address account) public override onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
         super.revokeRole(role, account);
         bytes32 roleKey = keccak256(abi.encode(role, account));
         delete roleExpirations[roleKey];
@@ -257,8 +211,9 @@ contract RyzerWalletCore is
     }
 
     modifier rateLimited(address user) {
-        if (block.number <= lastOperationBlock[user] + RATE_LIMIT_BLOCKS)
+        if (block.number <= lastOperationBlock[user] + RATE_LIMIT_BLOCKS) {
             revert RateLimited();
+        }
         lastOperationBlock[user] = block.number;
         _;
     }
@@ -268,44 +223,26 @@ contract RyzerWalletCore is
         _;
     }
 
-    modifier verifyDelegation(
-        address delegator,
-        bytes calldata delegationData
-    ) {
+    modifier verifyDelegation(address delegator, bytes calldata delegationData) {
         require(delegator != address(0), "Invalid delegator");
-        (bytes32 messageHash, bytes memory signature) = abi.decode(
-            delegationData,
-            (bytes32, bytes)
-        );
+        (bytes32 messageHash, bytes memory signature) = abi.decode(delegationData, (bytes32, bytes));
         bytes32 ethSignedMessageHash = toEthSignedMessageHash(messageHash);
-        require(
-            ECDSA.recover(ethSignedMessageHash, signature) == delegator,
-            "Invalid delegation signature"
-        );
+        require(ECDSA.recover(ethSignedMessageHash, signature) == delegator, "Invalid delegation signature");
         _;
     }
 
-    function toEthSignedMessageHash(
-        bytes32 hash
-    ) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
-            );
+    function toEthSignedMessageHash(bytes32 hash) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
 
-    function setEmergencyStop(
-        bool stopped
-    ) external virtual onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+    function setEmergencyStop(bool stopped) external virtual onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
         emergencyStopped = stopped;
         if (stopped) _pause();
         else _unpause();
         emit EmergencyStop(stopped);
     }
 
-    function setDelegatedSigner(
-        address signer
-    )
+    function setDelegatedSigner(address signer)
         external
         nonReentrant
         notBlacklisted(msg.sender)
@@ -317,37 +254,28 @@ contract RyzerWalletCore is
         emit DelegatedSignerSet(msg.sender, signer);
     }
 
-    function setMultiSigners(
-        address[] calldata signers,
-        uint256 _threshold,
-        bytes32 merkleRoot
-    )
+    function setMultiSigners(address[] calldata signers, uint256 _threshold, bytes32 merkleRoot)
         external
         nonReentrant
         notBlacklisted(msg.sender)
         rateLimited(msg.sender)
         notEmergencyStopped
     {
-        require(
-            signers.length >= _threshold && _threshold > 0,
-            "Invalid multi-sig config"
-        );
+        require(signers.length >= _threshold && _threshold > 0, "Invalid multi-sig config");
         require(merkleRoot != bytes32(0), "Invalid Merkle root");
         multiSigners[msg.sender] = MultiSignature(merkleRoot, _threshold);
         emit MultiSignersSet(msg.sender, merkleRoot, _threshold);
     }
 
-    function validateUserOp(
-        UserOperation calldata userOp,
-        bytes32 userOpHash,
-        uint256
-    ) external nonReentrant notEmergencyStopped returns (uint256) {
+    function validateUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256)
+        external
+        nonReentrant
+        notEmergencyStopped
+        returns (uint256)
+    {
         require(msg.sender == entryPoint, "Only EntryPoint");
         require(!blacklistedUsers[userOp.sender], "User blacklisted");
-        require(
-            IEntryPoint(entryPoint).getUserOpHash(userOp) == userOpHash,
-            "Invalid hash"
-        );
+        require(IEntryPoint(entryPoint).getUserOpHash(userOp) == userOpHash, "Invalid hash");
         require(nonces[userOp.sender] == userOp.nonce, "Invalid nonce");
 
         if (multiSigners[userOp.sender].merkleRoot != bytes32(0)) {
@@ -355,8 +283,7 @@ contract RyzerWalletCore is
         } else if (delegatedSigners[userOp.sender] != address(0)) {
             bytes32 messageHash = toEthSignedMessageHash(userOpHash);
             require(
-                ECDSA.recover(messageHash, userOp.signature) ==
-                    delegatedSigners[userOp.sender],
+                ECDSA.recover(messageHash, userOp.signature) == delegatedSigners[userOp.sender],
                 "Invalid ECDSA signature"
             );
         } else {
@@ -375,49 +302,23 @@ contract RyzerWalletCore is
                     )
                 )
             );
-            require(
-                ECDSA.recover(digest, userOp.signature) == userOp.sender,
-                "Invalid EIP-712 signature"
-            );
+            require(ECDSA.recover(digest, userOp.signature) == userOp.sender, "Invalid EIP-712 signature");
         }
 
         nonces[userOp.sender]++;
         return 0;
     }
 
-    function _verifyMultiSignature(
-        address user,
-        bytes32 userOpHash,
-        bytes calldata signature
-    ) internal view {
+    function _verifyMultiSignature(address user, bytes32 userOpHash, bytes calldata signature) internal view {
         MultiSignature storage multiSig = multiSigners[user];
-        (
-            address[] memory signers,
-            bytes[] memory signatures,
-            bytes32[][] memory proofs
-        ) = abi.decode(signature, (address[], bytes[], bytes32[][]));
-        require(
-            signers.length == signatures.length &&
-                proofs.length == signers.length,
-            "Invalid signature data"
-        );
-        require(
-            signers.length >= multiSig.threshold,
-            "Insufficient signatures"
-        );
+        (address[] memory signers, bytes[] memory signatures, bytes32[][] memory proofs) =
+            abi.decode(signature, (address[], bytes[], bytes32[][]));
+        require(signers.length == signatures.length && proofs.length == signers.length, "Invalid signature data");
+        require(signers.length >= multiSig.threshold, "Insufficient signatures");
 
         bytes32 messageHash = toEthSignedMessageHash(userOpHash);
-        uint256 validSignatures = _countValidSignatures(
-            signers,
-            signatures,
-            proofs,
-            multiSig.merkleRoot,
-            messageHash
-        );
-        require(
-            validSignatures >= multiSig.threshold,
-            "Insufficient valid signatures"
-        );
+        uint256 validSignatures = _countValidSignatures(signers, signatures, proofs, multiSig.merkleRoot, messageHash);
+        require(validSignatures >= multiSig.threshold, "Insufficient valid signatures");
     }
 
     function _countValidSignatures(
@@ -428,15 +329,11 @@ contract RyzerWalletCore is
         bytes32 messageHash
     ) internal pure returns (uint256) {
         uint256 validSignatures = 0;
-        for (
-            uint i = 0;
-            i < signers.length && validSignatures < signers.length;
-            i++
-        ) {
+        for (uint256 i = 0; i < signers.length && validSignatures < signers.length; i++) {
             bytes32 leaf = keccak256(abi.encodePacked(signers[i]));
             if (
-                MerkleProof.verify(proofs[i], merkleRoot, leaf) &&
-                ECDSA.recover(messageHash, signatures[i]) == signers[i]
+                MerkleProof.verify(proofs[i], merkleRoot, leaf)
+                    && ECDSA.recover(messageHash, signatures[i]) == signers[i]
             ) {
                 validSignatures++;
             }
@@ -444,11 +341,7 @@ contract RyzerWalletCore is
         return validSignatures;
     }
 
-    function _grantRoleWithExpiration(
-        bytes32 role,
-        address account,
-        uint64 expiration
-    ) internal {
+    function _grantRoleWithExpiration(bytes32 role, address account, uint64 expiration) internal {
         require(account != address(0), "Invalid account");
         _grantRole(role, account);
         roleExpirations[keccak256(abi.encode(role, account))] = expiration;

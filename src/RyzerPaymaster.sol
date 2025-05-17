@@ -62,8 +62,14 @@ contract RyzerPaymaster is Initializable, UUPSUpgradeable, AccessControlUpgradea
     }
 
     function initialize(InitParams memory params) external initializer {
-        require(params.entryPoint != address(0) && params.factory != address(0) && params.gasToken != address(0), "Invalid address");
-        require(params.offPeakStart < 24 && params.offPeakEnd < 24 && params.offPeakStart < params.offPeakEnd, "Invalid hours");
+        require(
+            params.entryPoint != address(0) && params.factory != address(0) && params.gasToken != address(0),
+            "Invalid address"
+        );
+        require(
+            params.offPeakStart < 24 && params.offPeakEnd < 24 && params.offPeakStart < params.offPeakEnd,
+            "Invalid hours"
+        );
         require(params.offPeakDiscount <= 500, "Discount too high");
         require(params.volumeDiscount <= 500, "Discount too high");
         require(params.lowEthBalanceThreshold > 0 && params.lowTokenBalanceThreshold > 0, "Invalid thresholds");
@@ -124,7 +130,12 @@ contract RyzerPaymaster is Initializable, UUPSUpgradeable, AccessControlUpgradea
         emit GasTokenUpdated(newGasToken);
     }
 
-    function setOffPeakDiscount(uint256 startHour, uint256 endHour, uint64 discount) external onlyRole(ADMIN_ROLE) nonReentrant notEmergencyStopped {
+    function setOffPeakDiscount(uint256 startHour, uint256 endHour, uint64 discount)
+        external
+        onlyRole(ADMIN_ROLE)
+        nonReentrant
+        notEmergencyStopped
+    {
         require(startHour < 24 && endHour < 24 && startHour < endHour, "Invalid hours");
         require(discount <= 500, "Discount too high");
         offPeakStart = startHour;
@@ -133,7 +144,12 @@ contract RyzerPaymaster is Initializable, UUPSUpgradeable, AccessControlUpgradea
         emit OffPeakDiscountUpdated(startHour, endHour, discount);
     }
 
-    function setVolumeDiscount(uint64 threshold, uint64 discount) external onlyRole(ADMIN_ROLE) nonReentrant notEmergencyStopped {
+    function setVolumeDiscount(uint64 threshold, uint64 discount)
+        external
+        onlyRole(ADMIN_ROLE)
+        nonReentrant
+        notEmergencyStopped
+    {
         require(discount <= 500, "Discount too high");
         volumeDiscountThreshold = threshold;
         volumeDiscount = discount;
@@ -146,7 +162,12 @@ contract RyzerPaymaster is Initializable, UUPSUpgradeable, AccessControlUpgradea
         emit FeeTierUpdated(user, tier);
     }
 
-    function setLowBalanceThresholds(uint256 ethThreshold, uint256 tokenThreshold) external onlyRole(ADMIN_ROLE) nonReentrant notEmergencyStopped {
+    function setLowBalanceThresholds(uint256 ethThreshold, uint256 tokenThreshold)
+        external
+        onlyRole(ADMIN_ROLE)
+        nonReentrant
+        notEmergencyStopped
+    {
         require(ethThreshold > 0 && tokenThreshold > 0, "Invalid thresholds");
         lowEthBalanceThreshold = ethThreshold;
         lowTokenBalanceThreshold = tokenThreshold;
@@ -174,11 +195,12 @@ contract RyzerPaymaster is Initializable, UUPSUpgradeable, AccessControlUpgradea
         emit GasSponsored(user, amount, gasToken);
     }
 
-    function validatePaymasterUserOp(
-        UserOperation calldata userOp,
-        bytes32 /*userOpHash*/,
-        uint256 maxCost
-    ) external nonReentrant notEmergencyStopped returns (bytes memory context, uint256 validationData) {
+    function validatePaymasterUserOp(UserOperation calldata userOp, bytes32, /*userOpHash*/ uint256 maxCost)
+        external
+        nonReentrant
+        notEmergencyStopped
+        returns (bytes memory context, uint256 validationData)
+    {
         require(msg.sender == entryPoint, "Only EntryPoint");
         require(RyzerWalletFactory(factory).isWallet(userOp.sender), "Not a wallet");
 
@@ -216,12 +238,17 @@ contract RyzerPaymaster is Initializable, UUPSUpgradeable, AccessControlUpgradea
         }
     }
 
-    function withdrawFunds(address payable recipient, uint256 amount, address token) external onlyRole(ADMIN_ROLE) nonReentrant notEmergencyStopped {
+    function withdrawFunds(address payable recipient, uint256 amount, address token)
+        external
+        onlyRole(ADMIN_ROLE)
+        nonReentrant
+        notEmergencyStopped
+    {
         require(recipient != address(0), "Invalid recipient");
         require(amount > 0, "Invalid amount");
         if (token == address(0)) {
             require(amount <= address(this).balance, "Insufficient ETH balance");
-            (bool sent, ) = recipient.call{value: amount}("");
+            (bool sent,) = recipient.call{value: amount}("");
             require(sent, "ETH transfer failed");
         } else {
             require(amount <= IERC20(token).balanceOf(address(this)), "Insufficient token balance");

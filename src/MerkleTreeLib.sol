@@ -5,18 +5,20 @@ library MerkleTreeLib {
     function createMerkleRoot(address[] memory leaves) internal pure returns (bytes32) {
         require(leaves.length > 0, "No leaves provided");
         bytes32[] memory nodes = new bytes32[](leaves.length);
-        for (uint i = 0; i < leaves.length; i++) {
+        for (uint256 i = 0; i < leaves.length; i++) {
             nodes[i] = keccak256(abi.encodePacked(leaves[i]));
         }
 
         while (nodes.length > 1) {
             bytes32[] memory nextLevel = new bytes32[]((nodes.length + 1) / 2);
-            for (uint i = 0; i < nodes.length; i += 2) {
+            for (uint256 i = 0; i < nodes.length; i += 2) {
                 if (i + 1 < nodes.length) {
-                    nextLevel[i / 2] = keccak256(abi.encodePacked(
-                        nodes[i] < nodes[i + 1] ? nodes[i] : nodes[i + 1],
-                        nodes[i] < nodes[i + 1] ? nodes[i + 1] : nodes[i]
-                    ));
+                    nextLevel[i / 2] = keccak256(
+                        abi.encodePacked(
+                            nodes[i] < nodes[i + 1] ? nodes[i] : nodes[i + 1],
+                            nodes[i] < nodes[i + 1] ? nodes[i + 1] : nodes[i]
+                        )
+                    );
                 } else {
                     nextLevel[i / 2] = nodes[i];
                 }
@@ -29,7 +31,7 @@ library MerkleTreeLib {
     function generateProof(address[] memory leaves, uint256 index) internal pure returns (bytes32[] memory) {
         require(index < leaves.length, "Invalid index");
         bytes32[] memory nodes = new bytes32[](leaves.length);
-        for (uint i = 0; i < leaves.length; i++) {
+        for (uint256 i = 0; i < leaves.length; i++) {
             nodes[i] = keccak256(abi.encodePacked(leaves[i]));
         }
 
@@ -42,7 +44,7 @@ library MerkleTreeLib {
 
         uint256 currentIndex = index;
         uint256 levelLength = leaves.length;
-        for (uint i = 0; i < depth; i++) {
+        for (uint256 i = 0; i < depth; i++) {
             if (currentIndex % 2 == 0 && currentIndex + 1 < levelLength) {
                 proof[i] = nodes[currentIndex + 1];
             } else if (currentIndex % 2 == 1) {
@@ -52,12 +54,14 @@ library MerkleTreeLib {
             }
 
             bytes32[] memory nextLevel = new bytes32[]((levelLength + 1) / 2);
-            for (uint j = 0; j < levelLength; j += 2) {
+            for (uint256 j = 0; j < levelLength; j += 2) {
                 if (j + 1 < levelLength) {
-                    nextLevel[j / 2] = keccak256(abi.encodePacked(
-                        nodes[j] < nodes[j + 1] ? nodes[j] : nodes[j + 1],
-                        nodes[j] < nodes[j + 1] ? nodes[j + 1] : nodes[j]
-                    ));
+                    nextLevel[j / 2] = keccak256(
+                        abi.encodePacked(
+                            nodes[j] < nodes[j + 1] ? nodes[j] : nodes[j + 1],
+                            nodes[j] < nodes[j + 1] ? nodes[j + 1] : nodes[j]
+                        )
+                    );
                 } else {
                     nextLevel[j / 2] = nodes[j];
                 }
@@ -69,18 +73,22 @@ library MerkleTreeLib {
         return proof;
     }
 
-    function updateMerkleRoot(address[] memory currentLeaves, address newLeaf, bool add, uint256 index) internal pure returns (bytes32) {
+    function updateMerkleRoot(address[] memory currentLeaves, address newLeaf, bool add, uint256 index)
+        internal
+        pure
+        returns (bytes32)
+    {
         require(currentLeaves.length > 0, "No leaves provided");
         address[] memory updatedLeaves = new address[](add ? currentLeaves.length + 1 : currentLeaves.length - 1);
         if (add) {
-            for (uint i = 0; i < currentLeaves.length; i++) {
+            for (uint256 i = 0; i < currentLeaves.length; i++) {
                 updatedLeaves[i] = currentLeaves[i];
             }
             updatedLeaves[currentLeaves.length] = newLeaf;
         } else {
             require(index < currentLeaves.length, "Invalid index");
-            uint j = 0;
-            for (uint i = 0; i < currentLeaves.length; i++) {
+            uint256 j = 0;
+            for (uint256 i = 0; i < currentLeaves.length; i++) {
                 if (i == index) continue;
                 updatedLeaves[j] = currentLeaves[i];
                 j++;

@@ -28,7 +28,7 @@ library BitmapSet {
         if (index == 0) return false;
         set.bitmap[index / 256] &= ~(1 << (index % 256));
         delete set.indices[token];
-        for (uint i = 0; i < set.tokens.length; i++) {
+        for (uint256 i = 0; i < set.tokens.length; i++) {
             if (set.tokens[i] == token) {
                 set.tokens[i] = set.tokens[set.tokens.length - 1];
                 set.tokens.pop();
@@ -75,19 +75,18 @@ library PackedTransactionLog {
         return (uint64(targetChainId) << 32) | (uint64(sourceChainId) << 1) | (success ? 1 : 0);
     }
 
-    function addLog(
-        Log[] storage logs,
-        LogParams memory params
-    ) internal {
-        logs.push(Log({
-            txHash: params.txHash,
-            sender: params.sender,
-            recipient: params.recipient,
-            token: params.token,
-            packedAmountTimestamp: packAmountTimestamp(params.amount, params.timestamp),
-            packedMeta: packMeta(params.success, params.sourceChainId, params.targetChainId),
-            fee: params.fee
-        }));
+    function addLog(Log[] storage logs, LogParams memory params) internal {
+        logs.push(
+            Log({
+                txHash: params.txHash,
+                sender: params.sender,
+                recipient: params.recipient,
+                token: params.token,
+                packedAmountTimestamp: packAmountTimestamp(params.amount, params.timestamp),
+                packedMeta: packMeta(params.success, params.sourceChainId, params.targetChainId),
+                fee: params.fee
+            })
+        );
     }
 
     function getLogs(Log[] storage logs, uint256 start, uint256 limit) internal view returns (Log[] memory) {
@@ -115,7 +114,13 @@ library WalletRecovery {
         bool isInitiated;
     }
 
-    function initiate(RecoveryData storage recovery, address[] calldata recoveryKeys, uint64 recoveryThreshold, address[] calldata socialKeys, uint64 socialThreshold) internal {
+    function initiate(
+        RecoveryData storage recovery,
+        address[] calldata recoveryKeys,
+        uint64 recoveryThreshold,
+        address[] calldata socialKeys,
+        uint64 socialThreshold
+    ) internal {
         require(recoveryKeys.length > 0 && recoveryThreshold <= recoveryKeys.length, "Invalid recovery settings");
         require(socialThreshold <= socialKeys.length, "Invalid social threshold");
         recovery.recoveryKeys = recoveryKeys;
@@ -130,7 +135,7 @@ library WalletRecovery {
         require(recovery.isInitiated, "Not initiated");
         require(block.timestamp <= recovery.recoveryTimestamp + 7 days, "Expired");
         require(!recovery.hasApproved[recoveryApprover], "Already approved");
-        for (uint i = 0; i < recovery.recoveryKeys.length; i++) {
+        for (uint256 i = 0; i < recovery.recoveryKeys.length; i++) {
             if (recovery.recoveryKeys[i] == recoveryApprover) {
                 recovery.hasApproved[recoveryApprover] = true;
                 recovery.approvals++;
@@ -144,7 +149,7 @@ library WalletRecovery {
         require(recovery.isInitiated, "Not initiated");
         require(block.timestamp <= recovery.recoveryTimestamp + 7 days, "Expired");
         require(!recovery.hasSocialApproved[socialApprover], "Already approved");
-        for (uint i = 0; i < recovery.socialKeys.length; i++) {
+        for (uint256 i = 0; i < recovery.socialKeys.length; i++) {
             if (recovery.socialKeys[i] == socialApprover) {
                 recovery.hasSocialApproved[socialApprover] = true;
                 recovery.socialApprovals++;

@@ -38,11 +38,9 @@ interface IRyzerWalletCore {
 
     function setMultiSigners(address[] calldata signers, uint256 _threshold, bytes32 merkleRoot) external;
 
-    function validateUserOp(
-        UserOperation calldata userOp,
-        bytes32 userOpHash,
-        uint256 missingAccountFunds
-    ) external returns (uint256);
+    function validateUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 missingAccountFunds)
+        external
+        returns (uint256);
 
     function hasRole(bytes32 role, address account) external view returns (bool);
 

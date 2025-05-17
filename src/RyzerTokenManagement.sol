@@ -30,27 +30,11 @@ contract RyzerTokenManagement is
     mapping(bytes32 => uint64) private roleExpirations;
     bool public emergencyStopped;
 
-    event TokenDeposited(
-        address indexed user,
-        address indexed token,
-        uint256 amount,
-        bool isERC721,
-        uint256 tokenId
-    );
-    event TokenWithdrawn(
-        address indexed user,
-        address indexed token,
-        uint256 amount,
-        bool isERC721,
-        uint256 tokenId
-    );
+    event TokenDeposited(address indexed user, address indexed token, uint256 amount, bool isERC721, uint256 tokenId);
+    event TokenWithdrawn(address indexed user, address indexed token, uint256 amount, bool isERC721, uint256 tokenId);
     event WalletInitialized(address indexed wallet);
     event EmergencyStop(bool stopped);
-    event RoleGrantedWithExpiration(
-        bytes32 indexed role,
-        address indexed account,
-        uint64 expiration
-    );
+    event RoleGrantedWithExpiration(bytes32 indexed role, address indexed account, uint64 expiration);
 
     error InvalidParams();
     error InvalidAddresses();
@@ -72,18 +56,10 @@ contract RyzerTokenManagement is
 
     function initialize(InitParams memory params) public initializer {
         // Combine validation to reduce stack usage
-        if (
-            params.userId == 0 ||
-            params.threshold == 0 ||
-            params.initialUser == address(0)
-        ) {
+        if (params.userId == 0 || params.threshold == 0 || params.initialUser == address(0)) {
             revert InvalidParams();
         }
-        if (
-            params.entryPoint == address(0) ||
-            params.paymaster == address(0) ||
-            params.timelock == address(0)
-        ) {
+        if (params.entryPoint == address(0) || params.paymaster == address(0) || params.timelock == address(0)) {
             revert InvalidAddresses();
         }
         if (params.custodians.length > 50 || params.brokers.length > 50) {
@@ -95,12 +71,7 @@ contract RyzerTokenManagement is
         __ReentrancyGuard_init();
 
         _setInitialState(params);
-        _initializeRoles(
-            params.timelock,
-            msg.sender,
-            params.custodians,
-            params.brokers
-        );
+        _initializeRoles(params.timelock, msg.sender, params.custodians, params.brokers);
         emit WalletInitialized(address(this));
     }
 
@@ -118,48 +89,34 @@ contract RyzerTokenManagement is
         address[] memory custodians,
         address[] memory brokers
     ) internal {
-        _grantRoleWithExpiration(
-            DEFAULT_ADMIN_ROLE,
-            _timelock,
-            type(uint64).max
-        );
+        _grantRoleWithExpiration(DEFAULT_ADMIN_ROLE, _timelock, type(uint64).max);
         _grantRoleWithExpiration(CUSTODIAN_ROLE, _msgSender, type(uint64).max);
         _assignCustodianRoles(custodians);
         _assignBrokerRoles(brokers);
     }
 
     function _assignCustodianRoles(address[] memory custodians) internal {
-        for (uint i = 0; i < custodians.length; i++) {
+        for (uint256 i = 0; i < custodians.length; i++) {
             if (custodians[i] == address(0)) revert InvalidParams();
-            _grantRoleWithExpiration(
-                CUSTODIAN_ROLE,
-                custodians[i],
-                type(uint64).max
-            );
+            _grantRoleWithExpiration(CUSTODIAN_ROLE, custodians[i], type(uint64).max);
         }
     }
 
     function _assignBrokerRoles(address[] memory brokers) internal {
-        for (uint i = 0; i < brokers.length; i++) {
+        for (uint256 i = 0; i < brokers.length; i++) {
             if (brokers[i] == address(0)) revert InvalidParams();
             _grantRoleWithExpiration(BROKER_ROLE, brokers[i], type(uint64).max);
         }
     }
 
-    function _grantRoleWithExpiration(
-        bytes32 role,
-        address account,
-        uint64 expiration
-    ) internal {
+    function _grantRoleWithExpiration(bytes32 role, address account, uint64 expiration) internal {
         if (account == address(0)) revert InvalidParams();
         _grantRole(role, account);
         roleExpirations[keccak256(abi.encode(role, account))] = expiration;
         emit RoleGrantedWithExpiration(role, account, expiration);
     }
 
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyRole(DEFAULT_ADMIN_ROLE) {
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {
         // Assume timelock scheduling, similar to RyzerWalletCore
     }
 
@@ -168,45 +125,41 @@ contract RyzerTokenManagement is
         _;
     }
 
-    function depositERC20(
-        address token,
-        uint256 amount
-    ) external notEmergencyStopped nonReentrant {
+    function depositERC20(address token, uint256 amount) external notEmergencyStopped nonReentrant {
         if (token == address(0) || amount == 0) revert InvalidToken();
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         emit TokenDeposited(msg.sender, token, amount, false, 0);
     }
 
-    function depositERC721(
-        address token,
-        uint256 tokenId
-    ) external notEmergencyStopped nonReentrant {
+    function depositERC721(address token, uint256 tokenId) external notEmergencyStopped nonReentrant {
         if (token == address(0)) revert InvalidToken();
         IERC721(token).safeTransferFrom(msg.sender, address(this), tokenId);
         emit TokenDeposited(msg.sender, token, 1, true, tokenId);
     }
 
-    function withdrawERC20(
-        address token,
-        uint256 amount
-    ) external onlyRole(CUSTODIAN_ROLE) notEmergencyStopped nonReentrant {
+    function withdrawERC20(address token, uint256 amount)
+        external
+        onlyRole(CUSTODIAN_ROLE)
+        notEmergencyStopped
+        nonReentrant
+    {
         if (token == address(0) || amount == 0) revert InvalidToken();
         IERC20(token).safeTransfer(msg.sender, amount);
         emit TokenWithdrawn(msg.sender, token, amount, false, 0);
     }
 
-    function withdrawERC721(
-        address token,
-        uint256 tokenId
-    ) external onlyRole(CUSTODIAN_ROLE) notEmergencyStopped nonReentrant {
+    function withdrawERC721(address token, uint256 tokenId)
+        external
+        onlyRole(CUSTODIAN_ROLE)
+        notEmergencyStopped
+        nonReentrant
+    {
         if (token == address(0)) revert InvalidToken();
         IERC721(token).safeTransferFrom(address(this), msg.sender, tokenId);
         emit TokenWithdrawn(msg.sender, token, 1, true, tokenId);
     }
 
-    function setEmergencyStop(
-        bool stopped
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+    function setEmergencyStop(bool stopped) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
         emergencyStopped = stopped;
         emit EmergencyStop(stopped);
     }

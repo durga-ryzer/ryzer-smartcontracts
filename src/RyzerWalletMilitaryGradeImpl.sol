@@ -29,7 +29,7 @@
 //         // Create a new wallet address using a deterministic approach
 //         bytes32 salt = keccak256(abi.encodePacked(userId, block.timestamp, securityLevel));
 //         address walletAddress = address(uint160(uint256(keccak256(abi.encodePacked(salt)))));
-        
+
 //         // Set up military-grade configuration
 //         MilitaryGradeConfig memory config = MilitaryGradeConfig({
 //             securityLevel: securityLevel,
@@ -43,7 +43,7 @@
 //             biometricRequired: securityLevel == SecurityLevel.MILITARY,
 //             hardwareKeyRequired: securityLevel == SecurityLevel.MILITARY
 //         });
-        
+
 //         // Set up access policy
 //         AccessPolicy memory policy = AccessPolicy({
 //             allowedIPsHash: ipAddressHash,
@@ -56,7 +56,7 @@
 //             cooldownPeriod: securityLevel == SecurityLevel.MILITARY ? 1 hours : 0,
 //             lastAccessed: block.timestamp
 //         });
-        
+
 //         // Record security audit
 //         SecurityAudit memory audit = SecurityAudit({
 //             timestamp: block.timestamp,
@@ -68,13 +68,13 @@
 //             riskScore: 100, // 0.01 initial risk score
 //             details: ""
 //         });
-        
+
 //         // Store configurations
 //         militaryGradeConfigs[walletAddress] = config;
 //         accessPolicies[walletAddress] = policy;
 //         securityAudits[walletAddress].push(audit);
 //         emergencyLockdownEnabled[walletAddress] = false;
-        
+
 //         // Initialize intrusion detection
 //         intrusionDetection[walletAddress] = IntrusionDetection({
 //             anomalyScore: 0,
@@ -82,14 +82,14 @@
 //             locked: false,
 //             lockExpiry: 0
 //         });
-        
+
 //         // Associate wallet with user ID
 //         userAddressToId[walletAddress] = userId;
-        
+
 //         emit MilitaryGradeWalletCreated(walletAddress, securityLevel);
 //         return walletAddress;
 //     }
-    
+
 //     /**
 //      * @notice Verify a security operation with military-grade checks
 //      * @param wallet The wallet address
@@ -115,69 +115,69 @@
 //         MilitaryGradeConfig memory config = militaryGradeConfigs[wallet];
 //         AccessPolicy memory policy = accessPolicies[wallet];
 //         IntrusionDetection memory detection = intrusionDetection[wallet];
-        
+
 //         // Check if wallet is locked
 //         if (detection.locked && block.timestamp < detection.lockExpiry) {
 //             revert WalletLocked();
 //         }
-        
+
 //         // Check emergency lockdown
 //         if (emergencyLockdownEnabled[wallet]) {
 //             revert EmergencyLockdownActive();
 //         }
-        
+
 //         // Check MFA requirement
 //         if (config.mfaRequired && !mfaVerified) {
 //             revert MFARequired();
 //         }
-        
+
 //         // Check biometric requirement
 //         if (config.biometricRequired && !biometricVerified) {
 //             revert BiometricVerificationRequired();
 //         }
-        
+
 //         // Check hardware key requirement
 //         if (config.hardwareKeyRequired && !hardwareKeyVerified) {
 //             revert HardwareKeyRequired();
 //         }
-        
+
 //         // Check geofencing
-//         if (config.geofencingEnabled && policy.allowedGeolocationsHash != bytes32(0) && 
+//         if (config.geofencingEnabled && policy.allowedGeolocationsHash != bytes32(0) &&
 //             policy.allowedGeolocationsHash != geoLocationHash) {
 //             revert GeoRestricted();
 //         }
-        
+
 //         // Check time window
-//         if (block.timestamp < policy.allowedTimeWindowStart || 
+//         if (block.timestamp < policy.allowedTimeWindowStart ||
 //             block.timestamp > policy.allowedTimeWindowEnd) {
 //             revert TimeWindowRestricted();
 //         }
-        
+
 //         // Check device allowlist
-//         if (policy.allowedDevicesHash != bytes32(0) && 
+//         if (policy.allowedDevicesHash != bytes32(0) &&
 //             policy.allowedDevicesHash != deviceIdHash) {
 //             revert DeviceNotAllowed();
 //         }
-        
+
 //         // Check IP allowlist
-//         if (policy.allowedIPsHash != bytes32(0) && 
+//         if (policy.allowedIPsHash != bytes32(0) &&
 //             policy.allowedIPsHash != ipAddressHash) {
 //             revert IPAddressNotAllowed();
 //         }
-        
+
 //         // Check cooldown period
-//         if (policy.cooldownPeriod > 0 && 
+//         if (policy.cooldownPeriod > 0 &&
 //             block.timestamp - policy.lastAccessed < policy.cooldownPeriod) {
 //             revert CooldownPeriodActive();
 //         }
-        
+
 //         // Update last accessed time
 //         AccessPolicy storage policyStorage = accessPolicies[wallet];
 //         policyStorage.lastAccessed = block.timestamp;
-        
+
 //         return true;
 //     }
-    
+
 //     /**
 //      * @notice Record a security audit event
 //      * @param wallet The wallet address
@@ -209,11 +209,11 @@
 //             riskScore: riskScore,
 //             details: details
 //         });
-        
+
 //         securityAudits[wallet].push(audit);
 //         emit SecurityAuditRecorded(wallet, action, success);
 //     }
-    
+
 //     /**
 //      * @notice Update the anomaly score for intrusion detection
 //      * @param wallet The wallet address
@@ -230,16 +230,16 @@
 //         IntrusionDetection storage detection = intrusionDetection[wallet];
 //         detection.anomalyScore = anomalyScore;
 //         detection.lastDetectionTime = block.timestamp;
-        
+
 //         if (lock) {
 //             detection.locked = true;
 //             detection.lockExpiry = block.timestamp + lockDuration;
 //             emit WalletLocked(wallet, detection.lockExpiry);
 //         }
-        
+
 //         emit AnomalyDetected(wallet, anomalyScore);
 //     }
-    
+
 //     /**
 //      * @notice Unlock a wallet that was locked due to anomaly detection
 //      * @param wallet The wallet address
@@ -251,7 +251,7 @@
 //         detection.anomalyScore = 0;
 //         emit WalletUnlocked(wallet);
 //     }
-    
+
 //     /**
 //      * @notice Set emergency lockdown status for a wallet
 //      * @param wallet The wallet address
@@ -265,7 +265,7 @@
 //             emit EmergencyLockdownDeactivated(wallet);
 //         }
 //     }
-    
+
 //     /**
 //      * @notice Update the military-grade security configuration for a wallet
 //      * @param wallet The wallet address
@@ -278,7 +278,7 @@
 //         militaryGradeConfigs[wallet] = config;
 //         emit SecurityConfigUpdated(wallet, config.securityLevel);
 //     }
-    
+
 //     /**
 //      * @notice Update the access policy for a wallet
 //      * @param wallet The wallet address
@@ -291,7 +291,7 @@
 //         accessPolicies[wallet] = policy;
 //         emit AccessPolicyUpdated(wallet);
 //     }
-    
+
 //     /**
 //      * @notice Register TEE attestation for a wallet
 //      * @param wallet The wallet address
@@ -311,10 +311,10 @@
 //             signature: signature,
 //             verified: verified
 //         });
-        
+
 //         emit TEEAttestationVerified(wallet, verified);
 //     }
-    
+
 //     /**
 //      * @notice Configure TSS for a wallet
 //      * @param wallet The wallet address
@@ -329,7 +329,7 @@
 //         bytes32 sharesHash
 //     ) external onlyRole(TSS_OPERATOR_ROLE) {
 //         require(threshold > 0 && threshold <= totalShares, "Invalid threshold");
-        
+
 //         tssConfigs[wallet] = TSSConfig({
 //             threshold: threshold,
 //             totalShares: totalShares,

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.29;
+pragma solidity ^0.8.29;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -42,13 +42,7 @@ interface IOracleAggregator {
     function latestRoundData()
         external
         view
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        );
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
 }
 
 /// @notice EntryPoint interface for account abstraction (e.g., ERC-4337)
@@ -60,20 +54,17 @@ interface IEntryPoint {
 
 /// @notice Paymaster interface for covering gas costs of user operations
 interface IPaymaster {
-    function validatePaymasterUserOp(
-        UserOperation calldata userOp,
-        bytes32 userOpHash,
-        uint256 maxCost
-    ) external returns (bytes memory context, uint256 validationData);
+    function validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
+        external
+        returns (bytes memory context, uint256 validationData);
 }
 
 /// @notice Interface for verifying off-chain delegation logic
 interface IDelegatorCore {
-    function verifyDelegation(
-        address delegator,
-        address delegate,
-        bytes calldata delegationData
-    ) external view returns (bool);
+    function verifyDelegation(address delegator, address delegate, bytes calldata delegationData)
+        external
+        view
+        returns (bool);
 }
 
 /// @notice Struct defining a UserOperation for account abstraction
