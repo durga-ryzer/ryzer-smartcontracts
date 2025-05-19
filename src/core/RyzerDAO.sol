@@ -18,16 +18,28 @@ contract RyzerDAO is
     ReentrancyGuardUpgradeable,
     PausableUpgradeable
 {
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    uint256 public constant MIN_PROPOSAL_DELAY = 1 hours;
-    uint256 public constant MAX_PROPOSAL_DELAY = 30 days;
-    uint256 public constant VOTING_DURATION = 3 days;
-    uint256 public constant EXECUTION_DEADLINE = 7 days;
-    uint256 public constant MIN_SIGNATURES = 2;
-    uint256 public constant MAX_SIGNATURES = 10;
-    uint256 public constant MIN_QUORUM = 10 * 10 ** 18;
-    uint256 public constant MAX_DESCRIPTION_LENGTH = 1000;
+    /*//////////////////////////////////////////////////////////////
+                         ERRORS
+    //////////////////////////////////////////////////////////////*/
+    error InvalidAddress(address addr);
+    error InvalidDelay();
+    error InsufficientBalance();
+    error ProposalNotFound();
+    error VotingPeriodEnded();
+    error AlreadyVoted();
+    error AlreadySigned();
+    error InsufficientQuorum();
+    error InsufficientSignatures();
+    error ProposalExpired();
+    error ProposalNotExpired();
+    error InvalidSignatureCount();
+    error InvalidParameter(string parameter);
+    error InvalidChainId();
+    error CannotModifyAdmin(address addr);
 
+    /*//////////////////////////////////////////////////////////////
+                        TYPE DECLARATIONS
+    //////////////////////////////////////////////////////////////*/
     struct Proposal {
         string description;
         uint48 startTime;
@@ -39,6 +51,20 @@ contract RyzerDAO is
         bool executed;
     }
 
+    /*//////////////////////////////////////////////////////////////
+                         STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    uint256 public constant MIN_PROPOSAL_DELAY = 1 hours;
+    uint256 public constant MAX_PROPOSAL_DELAY = 30 days;
+    uint256 public constant VOTING_DURATION = 3 days;
+    uint256 public constant EXECUTION_DEADLINE = 7 days;
+    uint256 public constant MIN_SIGNATURES = 2;
+    uint256 public constant MAX_SIGNATURES = 10;
+    uint256 public constant MIN_QUORUM = 10 * 10 ** 18;
+    uint256 public constant MAX_DESCRIPTION_LENGTH = 1000;
+
     IERC20 public ryzerXToken;
     address public project;
     uint16 public chainId;
@@ -48,6 +74,10 @@ contract RyzerDAO is
     mapping(uint256 => Proposal) public proposals;
     mapping(uint256 => mapping(address => bool)) public proposalVoters;
     mapping(uint256 => mapping(address => bool)) public proposalSigners;
+
+    /*//////////////////////////////////////////////////////////////
+                           EVENTS
+    //////////////////////////////////////////////////////////////*/
 
     event DAOInitialized(
         address indexed ryzerXToken,
@@ -68,21 +98,9 @@ contract RyzerDAO is
     event SignerRevoked(address indexed signer, uint16 chainId);
     event GovernanceParamsSet(uint256 requiredSignatures, uint256 quorumThreshold, uint16 chainId);
 
-    error InvalidAddress(address addr);
-    error InvalidDelay();
-    error InsufficientBalance();
-    error ProposalNotFound();
-    error VotingPeriodEnded();
-    error AlreadyVoted();
-    error AlreadySigned();
-    error InsufficientQuorum();
-    error InsufficientSignatures();
-    error ProposalExpired();
-    error ProposalNotExpired();
-    error InvalidSignatureCount();
-    error InvalidParameter(string parameter);
-    error InvalidChainId();
-    error CannotModifyAdmin(address addr);
+    /*//////////////////////////////////////////////////////////////
+                           EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Initializes the DAO
     /// @param _project Project address
@@ -177,14 +195,6 @@ contract RyzerDAO is
         requiredSignatures = _requiredSignatures;
         quorumThreshold = _quorumThreshold;
         emit GovernanceParamsSet(_requiredSignatures, _quorumThreshold, chainId);
-    }
-
-    /// @notice Authorizes contract upgrades
-    /// @param newImplementation New implementation address
-    function _authorizeUpgrade(address newImplementation) internal view override onlyRole(ADMIN_ROLE) {
-        if (newImplementation == address(0) || newImplementation.code.length == 0) {
-            revert InvalidAddress(newImplementation);
-        }
     }
 
     /// @notice Creates a new proposal
@@ -309,6 +319,22 @@ contract RyzerDAO is
     function unpause() external onlyRole(ADMIN_ROLE) {
         _unpause();
     }
+
+    /*//////////////////////////////////////////////////////////////
+                           INTERNAL VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Authorizes contract upgrades
+    /// @param newImplementation New implementation address
+    function _authorizeUpgrade(address newImplementation) internal view override onlyRole(ADMIN_ROLE) {
+        if (newImplementation == address(0) || newImplementation.code.length == 0) {
+            revert InvalidAddress(newImplementation);
+        }
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                           EXTERNAL VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Gets proposal status
     /// @param proposalId Proposal ID
