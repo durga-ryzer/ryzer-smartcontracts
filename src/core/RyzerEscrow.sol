@@ -21,15 +21,32 @@ contract RyzerEscrow is
     ReentrancyGuardUpgradeable,
     PausableUpgradeable
 {
+    /*//////////////////////////////////////////////////////////////
+                         LIBRARIES
+    //////////////////////////////////////////////////////////////*/
     using SafeERC20 for IERC20;
 
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    uint256 public constant USDT_TOKEN_DECIMAL = 6;
-    uint256 public constant DISPUTE_TIMEOUT = 7 days;
-    uint256 public constant DISPUTE_EXPIRATION = 30 days;
-    uint256 public constant MIN_SIGNATURES = 2;
-    uint256 public constant MAX_REASON_LENGTH = 256;
+    /*//////////////////////////////////////////////////////////////
+                         ERRORS
+    //////////////////////////////////////////////////////////////*/
 
+    error InvalidAddress(address addr);
+    error InvalidAmount();
+    error DepositNotFound();
+    error InsufficientFunds();
+    error DisputeNotFound();
+    error DisputeAlreadyResolved();
+    error DisputeTimeoutNotMet();
+    error DisputeExpired();
+    error AlreadySigned();
+    error InvalidTokenDecimals(string token, uint8 decimals);
+    error Unauthorized();
+    error InvalidChainId();
+    error InvalidParameter(string parameter);
+
+    /*//////////////////////////////////////////////////////////////
+                         TYPE DECLARATIONS
+    //////////////////////////////////////////////////////////////*/
     struct Deposit {
         address buyer;
         uint256 amount;
@@ -48,6 +65,16 @@ contract RyzerEscrow is
         address resolvedTo;
     }
 
+    /*//////////////////////////////////////////////////////////////
+                         STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    uint256 public constant USDT_TOKEN_DECIMAL = 6;
+    uint256 public constant DISPUTE_TIMEOUT = 7 days;
+    uint256 public constant DISPUTE_EXPIRATION = 30 days;
+    uint256 public constant MIN_SIGNATURES = 2;
+    uint256 public constant MAX_REASON_LENGTH = 256;
+
     IERC20 public usdtToken;
     address public projectContract;
     uint16 public chainId;
@@ -61,6 +88,9 @@ contract RyzerEscrow is
     mapping(bytes32 => mapping(address => bool)) public releaseSignatures;
     mapping(bytes32 => uint256) public releaseSignatureCount;
 
+    /*//////////////////////////////////////////////////////////////
+                           EVENTS
+    //////////////////////////////////////////////////////////////*/
     event EscrowInitialized(address indexed usdtToken, address indexed projectContract, uint16 chainId);
     event Deposited(bytes32 indexed orderId, address indexed buyer, uint256 amount, bytes32 assetId, uint16 chainId);
     event Released(bytes32 indexed orderId, address indexed to, uint256 amount, uint16 chainId);
@@ -74,19 +104,9 @@ contract RyzerEscrow is
     event EmergencyWithdrawal(address indexed recipient, uint256 amount, uint16 chainId);
     event CoreContractsSet(address indexed usdtToken, address indexed projectContract, uint16 chainId);
 
-    error InvalidAddress(address addr);
-    error InvalidAmount();
-    error DepositNotFound();
-    error InsufficientFunds();
-    error DisputeNotFound();
-    error DisputeAlreadyResolved();
-    error DisputeTimeoutNotMet();
-    error DisputeExpired();
-    error AlreadySigned();
-    error InvalidTokenDecimals(string token, uint8 decimals);
-    error Unauthorized();
-    error InvalidChainId();
-    error InvalidParameter(string parameter);
+    /*//////////////////////////////////////////////////////////////
+                           EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Initializes the escrow contract
     /// @param _usdtToken USDT token address
@@ -147,14 +167,6 @@ contract RyzerEscrow is
         projectContract = _projectContract;
         chainId = _chainId;
         emit CoreContractsSet(_usdtToken, _projectContract, _chainId);
-    }
-
-    /// @notice Authorizes contract upgrades
-    /// @param newImplementation New implementation address
-    function _authorizeUpgrade(address newImplementation) internal view override onlyRole(ADMIN_ROLE) {
-        if (newImplementation == address(0) || newImplementation.code.length == 0) {
-            revert InvalidAddress(newImplementation);
-        }
     }
 
     /// @notice Deposits funds for an order
@@ -334,6 +346,21 @@ contract RyzerEscrow is
     function unpause() external onlyRole(ADMIN_ROLE) {
         _unpause();
     }
+
+    /*//////////////////////////////////////////////////////////////
+                           INTERNAL VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Authorizes contract upgrades
+    /// @param newImplementation New implementation address
+    function _authorizeUpgrade(address newImplementation) internal view override onlyRole(ADMIN_ROLE) {
+        if (newImplementation == address(0) || newImplementation.code.length == 0) {
+            revert InvalidAddress(newImplementation);
+        }
+    }
+    /*//////////////////////////////////////////////////////////////
+                           EXTERNAL VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Gets dispute status
     /// @param disputeId Dispute ID
