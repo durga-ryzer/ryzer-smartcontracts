@@ -22,19 +22,36 @@ contract RyzerOrderManager is
     ReentrancyGuardUpgradeable,
     PausableUpgradeable
 {
+    /*//////////////////////////////////////////////////////////////
+                         LIBRARIES
+    //////////////////////////////////////////////////////////////*/
     using SafeERC20 for IERC20;
 
-    // Role identifiers
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    /*//////////////////////////////////////////////////////////////
+                         ERRORS
+    //////////////////////////////////////////////////////////////*/
+    error InvalidAddress(address addr);
+    error InvalidProject();
+    error InsufficientBalance(uint256 balance, uint256 required);
+    error InvalidAmount(string reason);
+    error OrderNotFound(bytes32 orderId);
+    error DocumentsNotSigned();
+    error OrderExpired(uint48 expiration);
+    error OrderAlreadyFinalized();
+    error OrderNotPending();
+    error CancellationDelayNotMet(uint48 delayEnd);
+    error AlreadySigned(address signer);
+    error OrderNotStuck();
+    error InvalidParameter(string parameter);
+    error InvalidChainId(uint16 chainId);
+    error TimelockNotMet(uint48 timelockEnd);
+    error InvalidTokenDecimals(uint8 decimals);
+    error Unauthorized();
+    error OrderAlreadyReleased();
 
-    // Constants
-    uint256 public constant USDT_TOKEN_DECIMAL = 6;
-    uint256 public constant ORDER_EXPIRATION = 7 days;
-    uint256 public constant CANCELLATION_DELAY = 1 days;
-    uint256 public constant MIN_SIGNATURES = 2;
-    uint256 public constant MAX_ORDER_SIZE = 1_000_000 * 10 ** 18;
-    uint256 public constant RELEASE_TIMELOCK = 7 days;
-
+    /*//////////////////////////////////////////////////////////////
+                         TYPE DECLARATIONS
+    //////////////////////////////////////////////////////////////*/
     // Enums
     enum OrderStatus {
         Pending,
@@ -58,6 +75,20 @@ contract RyzerOrderManager is
         bool released;
     }
 
+    /*//////////////////////////////////////////////////////////////
+                         STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+    // Role identifiers
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+
+    // Constants
+    uint256 public constant USDT_TOKEN_DECIMAL = 6;
+    uint256 public constant ORDER_EXPIRATION = 7 days;
+    uint256 public constant CANCELLATION_DELAY = 1 days;
+    uint256 public constant MIN_SIGNATURES = 2;
+    uint256 public constant MAX_ORDER_SIZE = 1_000_000 * 10 ** 18;
+    uint256 public constant RELEASE_TIMELOCK = 7 days;
+
     // State variables
     IERC20 public usdtToken;
     address public escrow;
@@ -68,7 +99,9 @@ contract RyzerOrderManager is
     mapping(bytes32 => mapping(address => bool)) public fundReleaseSignatures;
     mapping(bytes32 => uint256) public fundReleaseSignatureCount;
 
-    // Events
+    /*//////////////////////////////////////////////////////////////
+                         EVENTS
+    //////////////////////////////////////////////////////////////*/
     event Initialized(address usdtToken, address escrow, address project, uint16 chainId);
     event OrderPlaced(bytes32 indexed orderId, address indexed buyer, uint256 amount, bytes32 assetId, uint16 chainId);
     event DocumentsSigned(bytes32 indexed orderId, address indexed buyer, uint16 chainId);
@@ -82,25 +115,9 @@ contract RyzerOrderManager is
         address indexed usdtToken, address indexed escrow, address indexed project, uint16 chainId
     );
 
-    // Errors
-    error InvalidAddress(address addr);
-    error InvalidProject();
-    error InsufficientBalance(uint256 balance, uint256 required);
-    error InvalidAmount(string reason);
-    error OrderNotFound(bytes32 orderId);
-    error DocumentsNotSigned();
-    error OrderExpired(uint48 expiration);
-    error OrderAlreadyFinalized();
-    error OrderNotPending();
-    error CancellationDelayNotMet(uint48 delayEnd);
-    error AlreadySigned(address signer);
-    error OrderNotStuck();
-    error InvalidParameter(string parameter);
-    error InvalidChainId(uint16 chainId);
-    error TimelockNotMet(uint48 timelockEnd);
-    error InvalidTokenDecimals(uint8 decimals);
-    error Unauthorized();
-    error OrderAlreadyReleased();
+    /*//////////////////////////////////////////////////////////////
+                         EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Initializes the order manager
     /// @param _usdtToken USDT token address
@@ -152,44 +169,6 @@ contract RyzerOrderManager is
         escrow = _escrow;
         project = _project;
         emit ProjectContractsSet(_usdtToken, _escrow, _project, uint16(block.chainid));
-    }
-
-    /// @notice Authorizes contract upgrades
-    /// @param newImplementation New implementation address
-    function _authorizeUpgrade(address newImplementation) internal view override onlyRole(ADMIN_ROLE) {
-        if (newImplementation == address(0) || newImplementation.code.length == 0) {
-            revert InvalidAddress(newImplementation);
-        }
-    }
-
-    /// @notice Validates order input parameters
-    /// @param amount Token amount
-    /// @param projectAddress Project address
-    /// @param chainId_ Chain ID
-    /// @param assetId Asset ID
-    /// @param fees Order fees
-    function _validateOrderInput(uint256 amount, address projectAddress, uint16 chainId_, bytes32 assetId, uint256 fees)
-        private
-        view
-    {
-        if (projectAddress != project || projectAddress.code.length == 0) {
-            revert InvalidProject();
-        }
-        if (chainId_ != uint16(block.chainid)) revert InvalidChainId(chainId_);
-        if (assetId == bytes32(0)) revert InvalidParameter("assetId");
-        if (!IRyzerProject(project).getIsActive()) {
-            revert InvalidParameter("inactive project");
-        }
-        (uint256 minInvestment, uint256 maxInvestment) = IRyzerProject(project).getInvestmentLimits();
-        if (amount < minInvestment) {
-            revert InvalidAmount("below minimum investment");
-        }
-        if (amount > maxInvestment || amount > MAX_ORDER_SIZE) {
-            revert InvalidAmount("exceeds maximum investment");
-        }
-        uint256 tokenPrice = IRyzerProject(project).tokenPrice();
-        uint256 totalPrice = (amount * tokenPrice) / 10 ** 18;
-        if (fees > totalPrice / 2) revert InvalidAmount("excessive fees");
     }
 
     /// @notice Places a new order
@@ -374,15 +353,6 @@ contract RyzerOrderManager is
         emit EmergencyWithdrawal(recipient, amount, uint16(block.chainid));
     }
 
-    /// @notice Retrieves order details
-    /// @param orderId Order ID
-    /// @return Order details
-    function getOrderDetails(bytes32 orderId) external view returns (Order memory) {
-        Order storage order = orders[orderId];
-        if (order.buyer == address(0)) revert OrderNotFound(orderId);
-        return order;
-    }
-
     /// @notice Pauses the contract
     function pause() external onlyRole(ADMIN_ROLE) {
         _pause();
@@ -391,5 +361,64 @@ contract RyzerOrderManager is
     /// @notice Unpauses the contract
     function unpause() external onlyRole(ADMIN_ROLE) {
         _unpause();
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                           INTERNAL VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Authorizes contract upgrades
+    /// @param newImplementation New implementation address
+    function _authorizeUpgrade(address newImplementation) internal view override onlyRole(ADMIN_ROLE) {
+        if (newImplementation == address(0) || newImplementation.code.length == 0) {
+            revert InvalidAddress(newImplementation);
+        }
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                           PRIVATE VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Validates order input parameters
+    /// @param amount Token amount
+    /// @param projectAddress Project address
+    /// @param chainId_ Chain ID
+    /// @param assetId Asset ID
+    /// @param fees Order fees
+    function _validateOrderInput(uint256 amount, address projectAddress, uint16 chainId_, bytes32 assetId, uint256 fees)
+        private
+        view
+    {
+        if (projectAddress != project || projectAddress.code.length == 0) {
+            revert InvalidProject();
+        }
+        if (chainId_ != uint16(block.chainid)) revert InvalidChainId(chainId_);
+        if (assetId == bytes32(0)) revert InvalidParameter("assetId");
+        if (!IRyzerProject(project).getIsActive()) {
+            revert InvalidParameter("inactive project");
+        }
+        (uint256 minInvestment, uint256 maxInvestment) = IRyzerProject(project).getInvestmentLimits();
+        if (amount < minInvestment) {
+            revert InvalidAmount("below minimum investment");
+        }
+        if (amount > maxInvestment || amount > MAX_ORDER_SIZE) {
+            revert InvalidAmount("exceeds maximum investment");
+        }
+        uint256 tokenPrice = IRyzerProject(project).tokenPrice();
+        uint256 totalPrice = (amount * tokenPrice) / 10 ** 18;
+        if (fees > totalPrice / 2) revert InvalidAmount("excessive fees");
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                           EXTERNAL VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Retrieves order details
+    /// @param orderId Order ID
+    /// @return Order details
+    function getOrderDetails(bytes32 orderId) external view returns (Order memory) {
+        Order storage order = orders[orderId];
+        if (order.buyer == address(0)) revert OrderNotFound(orderId);
+        return order;
     }
 }
