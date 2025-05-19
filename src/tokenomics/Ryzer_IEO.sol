@@ -74,46 +74,22 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     uint32 public pendingTimelockActions; // Pending timelock actions
 
     // --- Events ---
-    event TimelockDelayUpdated(
-        uint48 indexed oldDelay,
-        uint48 indexed newDelay
-    );
-    event TokensPurchased(
-        address indexed buyer,
-        uint256 ethAmount,
-        uint256 tokenAmount
-    );
+    event TimelockDelayUpdated(uint48 indexed oldDelay, uint48 indexed newDelay);
+    event TokensPurchased(address indexed buyer, uint256 ethAmount, uint256 tokenAmount);
     event MerkleRootUpdated(bytes32 indexed newRoot);
     event ContributorAdded(address indexed contributor, uint32 newCount);
     event SaleInitialized(uint48 indexed startTime, uint48 indexed endTime);
     event SaleEnded(uint128 indexed totalRaised, uint128 indexed totalSold);
-    event ActionScheduled(
-        bytes32 indexed actionId,
-        ActionType indexed actionType,
-        uint48 scheduledTime
-    );
-    event ActionExecuted(
-        bytes32 indexed actionId,
-        ActionType indexed actionType
-    );
-    event ActionCanceled(
-        bytes32 indexed actionId,
-        ActionType indexed actionType
-    );
+    event ActionScheduled(bytes32 indexed actionId, ActionType indexed actionType, uint48 scheduledTime);
+    event ActionExecuted(bytes32 indexed actionId, ActionType indexed actionType);
+    event ActionCanceled(bytes32 indexed actionId, ActionType indexed actionType);
     event FundsWithdrawn(address indexed recipient, uint256 amount);
     event UnsoldTokensRecovered(address indexed recipient, uint256 amount);
     event SalePaused(bool indexed paused);
     event EmergencyStop(bool indexed stopped);
-    event TreasuryWalletUpdated(
-        address indexed oldWallet,
-        address indexed newWallet
-    );
+    event TreasuryWalletUpdated(address indexed oldWallet, address indexed newWallet);
     event SalePeriodExtended(uint48 indexed newEndTime);
-    event RoleChanged(
-        bytes32 indexed role,
-        address indexed account,
-        bool granted
-    );
+    event RoleChanged(bytes32 indexed role, address indexed account, bool granted);
 
     // --- Errors ---
     error InvalidParameter(string parameter);
@@ -136,11 +112,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     /// @param _token Token address.
     /// @param _treasuryWallet Treasury wallet address.
     /// @param _admin Admin address.
-    constructor(
-        address _token,
-        address _treasuryWallet,
-        address _admin
-    ) payable {
+    constructor(address _token, address _treasuryWallet, address _admin) payable {
         if (_token == address(0)) revert InvalidParameter("token");
         if (_treasuryWallet == address(0)) {
             revert InvalidParameter("treasuryWallet");
@@ -166,11 +138,11 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     /// @param startTime Sale start time.
     /// @param endTime Sale end time.
     /// @param _merkleRoot Merkle root for whitelisting.
-    function initializeSale(
-        uint48 startTime,
-        uint48 endTime,
-        bytes32 _merkleRoot
-    ) external onlyRole(ADMIN_ROLE) whenNotStopped {
+    function initializeSale(uint48 startTime, uint48 endTime, bytes32 _merkleRoot)
+        external
+        onlyRole(ADMIN_ROLE)
+        whenNotStopped
+    {
         if (_merkleRoot == bytes32(0)) revert InvalidParameter("merkleRoot");
         if (saleState.initialized) {
             revert InvalidParameter("saleState.initialized");
@@ -198,9 +170,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
 
     /// @notice Updates the timelock delay.
     /// @param newDelay New delay in seconds (1 hour to 30 days).
-    function updateTimelockDelay(
-        uint48 newDelay
-    ) external onlyRole(ADMIN_ROLE) whenNotStopped {
+    function updateTimelockDelay(uint48 newDelay) external onlyRole(ADMIN_ROLE) whenNotStopped {
         if (newDelay < ONE_HOUR || newDelay > THIRTY_DAYS) {
             revert InvalidParameter("timelockDelay");
         }
@@ -214,14 +184,10 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     /// @param actionType Type of action (WithdrawFunds or RecoverUnsoldTokens).
     /// @dev Uses abi.encodePacked instead of abi.encode for gas optimization.
     ///      Zero-to-one storage writes are unavoidable for dynamic mappings.
-    function scheduleTimelockAction(
-        ActionType actionType
-    ) external onlyRole(ADMIN_ROLE) whenNotStopped {
+    function scheduleTimelockAction(ActionType actionType) external onlyRole(ADMIN_ROLE) whenNotStopped {
         SaleState storage state = saleState; // Use storage pointer
         if (state.active) revert InvalidParameter("saleState.active");
-        bytes32 actionId = keccak256(
-            abi.encodePacked(actionType, _timelockNonce)
-        );
+        bytes32 actionId = keccak256(abi.encodePacked(actionType, _timelockNonce));
         if (timelockActions[actionId].scheduledTime != 0) {
             revert TimelockPending();
         }
@@ -242,16 +208,14 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     /// @param actionType Action type.
     /// @dev Uses block.timestamp for timelock checks, suitable for coarse-grained timing.
     ///      .call for ETH transfer does not require payable modifier in Solidity 0.8.x.
-    function executeTimelockAction(
-        bytes32 actionId,
-        ActionType actionType
-    ) external nonReentrant onlyRole(ADMIN_ROLE) whenNotStopped {
+    function executeTimelockAction(bytes32 actionId, ActionType actionType)
+        external
+        nonReentrant
+        onlyRole(ADMIN_ROLE)
+        whenNotStopped
+    {
         TimelockAction storage action = timelockActions[actionId];
-        if (
-            action.scheduledTime == 0 ||
-            action.executed ||
-            action.actionType != actionType
-        ) {
+        if (action.scheduledTime == 0 || action.executed || action.actionType != actionType) {
             revert InvalidParameter("actionId");
         }
         if (block.timestamp < action.scheduledTime) revert TimelockNotReady(); // Strict inequality used for standard timelock timing
@@ -263,7 +227,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
             address treasury = treasuryWallet; // Cache treasuryWallet
             uint256 balance = address(this).balance; // Uses address(this).balance, standard in Solidity 0.8.x
             if (balance != 0) {
-                (bool sent, ) = treasury.call{value: balance}("");
+                (bool sent,) = treasury.call{value: balance}("");
                 if (!sent) revert InvalidParameter("withdrawal");
                 emit FundsWithdrawn(treasury, balance);
             }
@@ -287,16 +251,13 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     /// @notice Cancels a timelock action.
     /// @param actionId Action ID.
     /// @param actionType Action type.
-    function cancelTimelockAction(
-        bytes32 actionId,
-        ActionType actionType
-    ) external onlyRole(ADMIN_ROLE) whenNotStopped {
+    function cancelTimelockAction(bytes32 actionId, ActionType actionType)
+        external
+        onlyRole(ADMIN_ROLE)
+        whenNotStopped
+    {
         TimelockAction storage action = timelockActions[actionId];
-        if (
-            action.scheduledTime == 0 ||
-            action.executed ||
-            action.actionType != actionType
-        ) {
+        if (action.scheduledTime == 0 || action.executed || action.actionType != actionType) {
             revert InvalidParameter("actionId");
         }
 
@@ -307,9 +268,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
 
     /// @notice Pauses or unpauses the sale.
     /// @param paused Pause state.
-    function setSalePaused(
-        bool paused
-    ) external onlyRole(ADMIN_ROLE) whenNotStopped {
+    function setSalePaused(bool paused) external onlyRole(ADMIN_ROLE) whenNotStopped {
         SaleState storage state = saleState;
         if (!state.initialized) {
             revert InvalidParameter("saleState.initialized");
@@ -333,9 +292,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
 
     /// @notice Updates the treasury wallet.
     /// @param newWallet New wallet address.
-    function updateTreasuryWallet(
-        address newWallet
-    ) external onlyRole(ADMIN_ROLE) whenNotStopped {
+    function updateTreasuryWallet(address newWallet) external onlyRole(ADMIN_ROLE) whenNotStopped {
         if (newWallet == address(0)) revert InvalidParameter("zero address");
         if (newWallet == address(token)) {
             revert InvalidParameter("token address");
@@ -348,9 +305,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
 
     /// @notice Extends the sale period.
     /// @param newEndTime New end time.
-    function extendSalePeriod(
-        uint48 newEndTime
-    ) external onlyRole(ADMIN_ROLE) whenNotStopped {
+    function extendSalePeriod(uint48 newEndTime) external onlyRole(ADMIN_ROLE) whenNotStopped {
         SaleState storage state = saleState; // Use storage pointer
         if (!state.initialized) {
             revert InvalidParameter("saleState.initialized");
@@ -364,10 +319,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     /// @notice Grants a role to an account.
     /// @param role Role to grant.
     /// @param account Account address.
-    function grantRoleToAddress(
-        bytes32 role,
-        address account
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotStopped {
+    function grantRoleToAddress(bytes32 role, address account) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotStopped {
         if (account == address(0)) revert InvalidParameter("account");
         if (hasRole(role, account)) return;
         _grantRole(role, account);
@@ -377,10 +329,11 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     /// @notice Revokes a role from an account.
     /// @param role Role to revoke.
     /// @param account Account address.
-    function revokeRoleFromAddress(
-        bytes32 role,
-        address account
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotStopped {
+    function revokeRoleFromAddress(bytes32 role, address account)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        whenNotStopped
+    {
         if (account == address(0)) revert InvalidParameter("account");
         if (!hasRole(role, account)) revert InvalidParameter("role");
         _revokeRole(role, account);
@@ -393,9 +346,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     /// @param proof Merkle proof for whitelisting.
     /// @dev Uses block.timestamp for sale period checks, suitable for coarse-grained timing.
     ///      Revert conditions are necessary for security but limited to mitigate DoS risks.
-    function buyTokens(
-        bytes32[] calldata proof
-    ) external payable nonReentrant whenNotStopped {
+    function buyTokens(bytes32[] calldata proof) external payable nonReentrant whenNotStopped {
         address caller = msg.sender;
         if (caller == address(0)) revert InvalidParameter("caller");
         if (!isWhitelisted(caller, proof)) revert InvalidProof();
@@ -415,10 +366,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     /// @param proof Merkle proof.
     /// @return True if whitelisted.
     /// @dev Uses abi.encodePacked instead of abi.encode for gas optimization.
-    function isWhitelisted(
-        address user,
-        bytes32[] memory proof
-    ) public view returns (bool) {
+    function isWhitelisted(address user, bytes32[] memory proof) public view returns (bool) {
         if (user == address(0)) revert InvalidParameter("user");
         bytes32 leaf = keccak256(abi.encodePacked(user));
         return proof.verify(merkleRoot, leaf);
@@ -427,9 +375,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     /// @notice Gets a contributor's contribution.
     /// @param contributor Contributor address.
     /// @return Contribution in wei.
-    function getContribution(
-        address contributor
-    ) external view returns (uint128) {
+    function getContribution(address contributor) external view returns (uint128) {
         return _contributors[contributor].contribution;
     }
 
@@ -438,9 +384,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     /// @return scheduledTime Scheduled execution time.
     /// @return executed Execution status.
     /// @return actionType Action type.
-    function getTimelockAction(
-        bytes32 actionId
-    )
+    function getTimelockAction(bytes32 actionId)
         external
         view
         returns (uint48 scheduledTime, bool executed, ActionType actionType)
@@ -454,11 +398,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     /// @notice Gets timelock status.
     /// @return pendingCount Number of pending actions.
     /// @return delay Timelock delay.
-    function getTimelockStatus()
-        external
-        view
-        returns (uint32 pendingCount, uint48 delay)
-    {
+    function getTimelockStatus() external view returns (uint32 pendingCount, uint48 delay) {
         pendingCount = pendingTimelockActions;
         delay = timelockDelay;
     }
@@ -481,11 +421,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
         uint128 currentTotalRaised = _totalRaised;
         uint128 currentTotalTokensSold = _totalTokensSold;
 
-        if (
-            !state.active ||
-            currentTime < saleStartTime ||
-            currentTime >= saleEndTime
-        ) revert SaleNotActive();
+        if (!state.active || currentTime < saleStartTime || currentTime >= saleEndTime) revert SaleNotActive();
         if (ethValue < MIN_CONTRIBUTION || ethValue > MAX_CONTRIBUTION) {
             revert InvalidParameter("ethValue");
         }
@@ -498,10 +434,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
         uint256 tokens = (ethValue * 1e18) / TOKEN_PRICE;
         uint128 newTotalRaised = currentTotalRaised + uint128(ethValue);
         uint128 newTotalTokensSold = currentTotalTokensSold + uint128(tokens);
-        if (
-            newTotalRaised >= SALE_CAP ||
-            newTotalTokensSold >= PUBLIC_ALLOCATION
-        ) revert CapExceeded(); // Uses non-strict inequalities for gas efficiency
+        if (newTotalRaised >= SALE_CAP || newTotalTokensSold >= PUBLIC_ALLOCATION) revert CapExceeded(); // Uses non-strict inequalities for gas efficiency
 
         _totalRaised = newTotalRaised;
         _totalTokensSold = newTotalTokensSold;
@@ -516,10 +449,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
         uint256 actualTokens = _transferTokens(buyer, tokens);
         emit TokensPurchased(buyer, ethValue, actualTokens);
 
-        if (
-            newTotalRaised >= SALE_CAP ||
-            newTotalTokensSold >= PUBLIC_ALLOCATION
-        ) {
+        if (newTotalRaised >= SALE_CAP || newTotalTokensSold >= PUBLIC_ALLOCATION) {
             state.active = false;
             emit SaleEnded(newTotalRaised, newTotalTokensSold);
         }
@@ -529,10 +459,7 @@ contract RyzerIEO is ReentrancyGuard, AccessControl {
     /// @param buyer Buyer address.
     /// @param tokenAmount Amount of tokens to transfer.
     /// @return actualTokens Actual tokens transferred.
-    function _transferTokens(
-        address buyer,
-        uint256 tokenAmount
-    ) private returns (uint256 actualTokens) {
+    function _transferTokens(address buyer, uint256 tokenAmount) private returns (uint256 actualTokens) {
         //address self = address(this); // Cache address(this)
         uint256 balanceBefore = token.balanceOf(buyer);
         token.safeTransfer(buyer, tokenAmount);

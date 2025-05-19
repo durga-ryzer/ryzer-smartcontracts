@@ -86,77 +86,24 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     mapping(address user => uint32 nonce) private _idoUsedNonces; // Nonces used in IDO
 
     // --- Events ---
-    event TimelockDelayUpdated(
-        uint48 indexed oldDelay,
-        uint48 indexed newDelay
-    );
-    event PresaleTokensPurchased(
-        address indexed buyer,
-        uint256 ethAmount,
-        uint256 tokenAmount
-    );
-    event IDOTokensPurchased(
-        address indexed buyer,
-        uint256 ethAmount,
-        uint256 tgeTokens,
-        uint256 vestedTokens
-    );
-    event VestingReleased(
-        address indexed contributor,
-        bool indexed isPresale,
-        uint256 amount
-    );
+    event TimelockDelayUpdated(uint48 indexed oldDelay, uint48 indexed newDelay);
+    event PresaleTokensPurchased(address indexed buyer, uint256 ethAmount, uint256 tokenAmount);
+    event IDOTokensPurchased(address indexed buyer, uint256 ethAmount, uint256 tgeTokens, uint256 vestedTokens);
+    event VestingReleased(address indexed contributor, bool indexed isPresale, uint256 amount);
     event MerkleRootUpdated(bool indexed isPresale, bytes32 indexed newRoot);
-    event ContributorAdded(
-        bool indexed isPresale,
-        address indexed contributor,
-        uint32 newCount
-    );
-    event SaleInitialized(
-        uint48 indexed presaleStart,
-        uint48 presaleEnd,
-        uint48 idoStart,
-        uint48 idoEnd
-    );
-    event SalePhaseEnded(
-        bool indexed isPresale,
-        uint128 indexed totalRaised,
-        uint128 totalSold
-    );
-    event ActionScheduled(
-        bytes32 indexed actionId,
-        ActionType indexed actionType,
-        uint48 scheduledTime
-    );
-    event ActionExecuted(
-        bytes32 indexed actionId,
-        ActionType indexed actionType
-    );
-    event ActionCanceled(
-        bytes32 indexed actionId,
-        ActionType indexed actionType
-    );
-    event FundsWithdrawn(
-        bool indexed isPresale,
-        address indexed recipient,
-        uint256 amount
-    );
-    event UnsoldTokensRecovered(
-        address indexed recipient,
-        uint256 indexed amount
-    );
+    event ContributorAdded(bool indexed isPresale, address indexed contributor, uint32 newCount);
+    event SaleInitialized(uint48 indexed presaleStart, uint48 presaleEnd, uint48 idoStart, uint48 idoEnd);
+    event SalePhaseEnded(bool indexed isPresale, uint128 indexed totalRaised, uint128 totalSold);
+    event ActionScheduled(bytes32 indexed actionId, ActionType indexed actionType, uint48 scheduledTime);
+    event ActionExecuted(bytes32 indexed actionId, ActionType indexed actionType);
+    event ActionCanceled(bytes32 indexed actionId, ActionType indexed actionType);
+    event FundsWithdrawn(bool indexed isPresale, address indexed recipient, uint256 amount);
+    event UnsoldTokensRecovered(address indexed recipient, uint256 indexed amount);
     event SalePaused(bool indexed isPresale, bool paused);
     event EmergencyStop(bool indexed stopped);
-    event TreasuryWalletUpdated(
-        address indexed oldWallet,
-        address indexed newWallet
-    );
+    event TreasuryWalletUpdated(address indexed oldWallet, address indexed newWallet);
     event SalePeriodExtended(bool indexed isPresale, uint48 indexed newEndTime);
-    event RoleChanged(
-        bytes32 indexed role,
-        address indexed account,
-        bool granted
-    );
+    event RoleChanged(bytes32 indexed role, address indexed account, bool granted);
 
     // --- Errors ---
     error InvalidParameter();
@@ -182,11 +129,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @param _treasuryWallet Treasury wallet address.
     /// @param _admin Admin address.
     constructor(address _token, address _treasuryWallet, address _admin) {
-        if (
-            _token == address(0) ||
-            _treasuryWallet == address(0) ||
-            _admin == address(0)
-        ) revert InvalidParameter();
+        if (_token == address(0) || _treasuryWallet == address(0) || _admin == address(0)) revert InvalidParameter();
         if (_treasuryWallet == _token) revert InvalidParameter();
 
         token = IERC20(_token);
@@ -222,10 +165,8 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
         }
         uint48 currentTime = uint48(block.timestamp);
         if (
-            _presaleStartTime <= currentTime ||
-            _presaleEndTime <= _presaleStartTime ||
-            _idoStartTime <= currentTime ||
-            _idoEndTime <= _idoStartTime
+            _presaleStartTime <= currentTime || _presaleEndTime <= _presaleStartTime || _idoStartTime <= currentTime
+                || _idoEndTime <= _idoStartTime
         ) revert InvalidParameter();
 
         address self = address(this); // Cache address(this) to reduce gas
@@ -243,21 +184,14 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
         _flags |= 0x01; // Presale active
         _flags |= 0x02; // IDO active
 
-        emit SaleInitialized(
-            _presaleStartTime,
-            _presaleEndTime,
-            _idoStartTime,
-            _idoEndTime
-        );
+        emit SaleInitialized(_presaleStartTime, _presaleEndTime, _idoStartTime, _idoEndTime);
         emit MerkleRootUpdated(true, _presaleMerkleRoot);
         emit MerkleRootUpdated(false, _idoMerkleRoot);
     }
 
     /// @notice Updates the timelock delay.
     /// @param newDelay New delay in seconds (1 hour to 30 days).
-    function updateTimelockDelay(
-        uint48 newDelay
-    ) external onlyRole(ADMIN_ROLE) whenNotStopped {
+    function updateTimelockDelay(uint48 newDelay) external onlyRole(ADMIN_ROLE) whenNotStopped {
         if (newDelay < 1 hours || newDelay > 30 days) revert InvalidParameter();
         uint48 oldDelay = timelockDelay;
         if (oldDelay == newDelay) return; // Avoid re-storing unchanged value
@@ -269,9 +203,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @param actionType Type of action.
     /// @dev Uses abi.encodePacked with fixed-length inputs (actionType, _nonce) to avoid hash collisions.
     ///      Zero-to-one storage writes are unavoidable for dynamic mappings.
-    function scheduleTimelockAction(
-        ActionType actionType
-    ) external onlyRole(ADMIN_ROLE) whenNotStopped {
+    function scheduleTimelockAction(ActionType actionType) external onlyRole(ADMIN_ROLE) whenNotStopped {
         if (_flags & 0x01 != 0 || _flags & 0x02 != 0) revert InvalidParameter();
         bytes32 actionId = keccak256(abi.encodePacked(actionType, _nonce));
         if (timelockActions[actionId].scheduledTime != 0) {
@@ -279,11 +211,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
         }
 
         uint48 scheduledTime = uint48(block.timestamp) + timelockDelay;
-        timelockActions[actionId] = TimelockAction(
-            scheduledTime,
-            false,
-            actionType
-        );
+        timelockActions[actionId] = TimelockAction(scheduledTime, false, actionType);
         pendingTimelockActions++;
         _nonce++;
 
@@ -295,16 +223,14 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @param actionType Action type.
     /// @dev Uses block.timestamp for coarse-grained timing, suitable for timelock.
     ///      .call for ETH transfer does not require payable modifier in Solidity 0.8.x.
-    function executeTimelockAction(
-        bytes32 actionId,
-        ActionType actionType
-    ) external nonReentrant onlyRole(ADMIN_ROLE) whenNotStopped {
+    function executeTimelockAction(bytes32 actionId, ActionType actionType)
+        external
+        nonReentrant
+        onlyRole(ADMIN_ROLE)
+        whenNotStopped
+    {
         TimelockAction storage action = timelockActions[actionId];
-        if (
-            action.scheduledTime == 0 ||
-            action.executed ||
-            action.actionType != actionType
-        ) revert InvalidParameter();
+        if (action.scheduledTime == 0 || action.executed || action.actionType != actionType) revert InvalidParameter();
         if (block.timestamp < action.scheduledTime) revert TimelockNotReady();
 
         action.executed = true;
@@ -316,7 +242,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
             uint256 balance = _presaleTotalRaised;
             if (balance != 0) {
                 delete _presaleTotalRaised; // Use delete to free storage
-                (bool sent, ) = treasury.call{value: balance}(""); // No payable modifier needed
+                (bool sent,) = treasury.call{value: balance}(""); // No payable modifier needed
                 if (!sent) revert InvalidParameter();
                 emit FundsWithdrawn(true, treasury, balance);
             }
@@ -324,7 +250,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
             uint256 balance = _idoTotalRaised;
             if (balance != 0) {
                 delete _idoTotalRaised; // Use delete to free storage
-                (bool sent, ) = treasury.call{value: balance}("");
+                (bool sent,) = treasury.call{value: balance}("");
                 if (!sent) revert InvalidParameter();
                 emit FundsWithdrawn(false, treasury, balance);
             }
@@ -346,16 +272,13 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @notice Cancels a timelock action.
     /// @param actionId Action ID.
     /// @param actionType Action type.
-    function cancelTimelockAction(
-        bytes32 actionId,
-        ActionType actionType
-    ) external onlyRole(ADMIN_ROLE) whenNotStopped {
+    function cancelTimelockAction(bytes32 actionId, ActionType actionType)
+        external
+        onlyRole(ADMIN_ROLE)
+        whenNotStopped
+    {
         TimelockAction storage action = timelockActions[actionId];
-        if (
-            action.scheduledTime == 0 ||
-            action.executed ||
-            action.actionType != actionType
-        ) revert InvalidParameter();
+        if (action.scheduledTime == 0 || action.executed || action.actionType != actionType) revert InvalidParameter();
 
         delete timelockActions[actionId]; // Free storage
         pendingTimelockActions--;
@@ -365,10 +288,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @notice Pauses or unpauses the sale.
     /// @param isPresale True for presale, false for IDO.
     /// @param paused Pause state.
-    function setSalePaused(
-        bool isPresale,
-        bool paused
-    ) external onlyRole(ADMIN_ROLE) whenNotStopped {
+    function setSalePaused(bool isPresale, bool paused) external onlyRole(ADMIN_ROLE) whenNotStopped {
         if (_flags & 0x04 == 0) revert InvalidParameter();
         bool current = isPresale ? (_flags & 0x01 != 0) : (_flags & 0x02 != 0);
         if (current == !paused) return; // Avoid re-storing unchanged value
@@ -391,9 +311,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
 
     /// @notice Updates the treasury wallet.
     /// @param newWallet New wallet address.
-    function updateTreasuryWallet(
-        address newWallet
-    ) external onlyRole(ADMIN_ROLE) whenNotStopped {
+    function updateTreasuryWallet(address newWallet) external onlyRole(ADMIN_ROLE) whenNotStopped {
         if (newWallet == address(0)) revert InvalidParameter();
         if (newWallet == address(token)) revert InvalidParameter();
         address oldWallet = treasuryWallet;
@@ -405,10 +323,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @notice Extends the sale period.
     /// @param isPresale True for presale, false for IDO.
     /// @param newEndTime New end time.
-    function extendSalePeriod(
-        bool isPresale,
-        uint48 newEndTime
-    ) external onlyRole(ADMIN_ROLE) whenNotStopped {
+    function extendSalePeriod(bool isPresale, uint48 newEndTime) external onlyRole(ADMIN_ROLE) whenNotStopped {
         if (_flags & 0x04 == 0) revert InvalidParameter();
         bool isActive = isPresale ? (_flags & 0x01 != 0) : (_flags & 0x02 != 0);
         if (!isActive) revert InvalidParameter();
@@ -422,10 +337,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @notice Grants a role to an account.
     /// @param role Role to grant.
     /// @param account Account address.
-    function grantRoleToAddress(
-        bytes32 role,
-        address account
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotStopped {
+    function grantRoleToAddress(bytes32 role, address account) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotStopped {
         if (account == address(0)) revert InvalidParameter();
         if (hasRole(role, account)) return; // Avoid re-storing unchanged value
         _grantRole(role, account);
@@ -435,10 +347,11 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @notice Revokes a role from an account.
     /// @param role Role to revoke.
     /// @param account Account address.
-    function revokeRoleFromAddress(
-        bytes32 role,
-        address account
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotStopped {
+    function revokeRoleFromAddress(bytes32 role, address account)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        whenNotStopped
+    {
         if (account == address(0)) revert InvalidParameter();
         if (!hasRole(role, account)) revert InvalidParameter();
         _revokeRole(role, account);
@@ -451,9 +364,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @param proof Merkle proof for whitelisting.
     /// @dev Uses block.timestamp for coarse-grained timing, suitable for sale periods.
     ///      Revert conditions are limited to essential security checks to mitigate DoS risks.
-    function buyPresaleTokens(
-        bytes32[] calldata proof
-    ) external payable nonReentrant whenNotStopped {
+    function buyPresaleTokens(bytes32[] calldata proof) external payable nonReentrant whenNotStopped {
         address buyer = msg.sender;
         if (buyer == address(0)) revert InvalidParameter();
         if (!isWhitelisted(true, buyer, proof)) revert InvalidProof();
@@ -464,9 +375,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @param proof Merkle proof for whitelisting.
     /// @dev Uses block.timestamp for coarse-grained timing, suitable for sale periods.
     ///      Revert conditions are limited to essential security checks to mitigate DoS risks.
-    function buyIDOTokens(
-        bytes32[] calldata proof
-    ) external payable nonReentrant whenNotStopped {
+    function buyIDOTokens(bytes32[] calldata proof) external payable nonReentrant whenNotStopped {
         address buyer = msg.sender;
         if (buyer == address(0)) revert InvalidParameter();
         if (!isWhitelisted(false, buyer, proof)) revert InvalidProof();
@@ -477,28 +386,18 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @param contributor Contributor address.
     /// @param isPresale True for presale, false for IDO.
     /// @dev Uses block.timestamp for coarse-grained timing, suitable for vesting schedules.
-    function releaseVestedTokens(
-        address contributor,
-        bool isPresale
-    ) external nonReentrant whenNotStopped {
+    function releaseVestedTokens(address contributor, bool isPresale) external nonReentrant whenNotStopped {
         if (msg.sender != contributor && !hasRole(ADMIN_ROLE, msg.sender)) {
             revert InvalidParameter();
         }
         Contributor storage contrib = _contributors[contributor];
-        uint128 vestedTokens = isPresale
-            ? contrib.presaleVestedTokens
-            : contrib.idoVestedTokens;
+        uint128 vestedTokens = isPresale ? contrib.presaleVestedTokens : contrib.idoVestedTokens;
         if (vestedTokens == 0) revert VestingNotActive();
 
-        if (
-            isPresale &&
-            block.timestamp < contrib.presaleVestingStart + (12 * ONE_MONTH)
-        ) revert CliffNotPassed();
+        if (isPresale && block.timestamp < contrib.presaleVestingStart + (12 * ONE_MONTH)) revert CliffNotPassed();
 
         uint256 vested = _calculateVested(isPresale, contrib);
-        uint128 released = isPresale
-            ? contrib.presaleReleased
-            : contrib.idoReleased;
+        uint128 released = isPresale ? contrib.presaleReleased : contrib.idoReleased;
         uint256 releasable = vested - released;
         if (releasable == 0) revert NoTokensToRelease();
 
@@ -530,18 +429,9 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @param proof Merkle proof.
     /// @return True if whitelisted.
     /// @dev Uses abi.encodePacked with fixed-length inputs (user, nonce) to avoid hash collisions.
-    function isWhitelisted(
-        bool isPresale,
-        address user,
-        bytes32[] memory proof
-    ) public view returns (bool) {
+    function isWhitelisted(bool isPresale, address user, bytes32[] memory proof) public view returns (bool) {
         if (user == address(0)) revert InvalidParameter();
-        bytes32 leaf = keccak256(
-            abi.encodePacked(
-                user,
-                isPresale ? _presaleUsedNonces[user] : _idoUsedNonces[user]
-            )
-        );
+        bytes32 leaf = keccak256(abi.encodePacked(user, isPresale ? _presaleUsedNonces[user] : _idoUsedNonces[user]));
         bytes32 root = isPresale ? presaleMerkleRoot : idoMerkleRoot;
         return proof.verify(root, leaf);
     }
@@ -558,9 +448,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @return idoReleasable Releasable IDO tokens.
     /// @return presaleVestingStart Presale vesting start time.
     /// @return idoVestingStart IDO vesting start time.
-    function getContribution(
-        address contributor
-    )
+    function getContribution(address contributor)
         external
         view
         returns (
@@ -586,10 +474,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
         presaleVestingStart = contrib.presaleVestingStart;
         idoVestingStart = contrib.idoVestingStart;
 
-        if (
-            contrib.presaleVestedTokens == 0 ||
-            block.timestamp < contrib.presaleVestingStart + (12 * ONE_MONTH)
-        ) {
+        if (contrib.presaleVestedTokens == 0 || block.timestamp < contrib.presaleVestingStart + (12 * ONE_MONTH)) {
             presaleReleasable = 0;
         } else {
             uint256 vested = _calculateVested(true, contrib);
@@ -609,9 +494,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @return scheduledTime Scheduled execution time.
     /// @return executed Execution status.
     /// @return actionType Action type.
-    function getTimelockAction(
-        bytes32 actionId
-    )
+    function getTimelockAction(bytes32 actionId)
         external
         view
         returns (uint48 scheduledTime, bool executed, ActionType actionType)
@@ -625,11 +508,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @notice Gets timelock status.
     /// @return pendingCount Number of pending actions.
     /// @return delay Timelock delay.
-    function getTimelockStatus()
-        external
-        view
-        returns (uint32 pendingCount, uint48 delay)
-    {
+    function getTimelockStatus() external view returns (uint32 pendingCount, uint48 delay) {
         pendingCount = pendingTimelockActions;
         delay = timelockDelay;
     }
@@ -649,12 +528,10 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @param userContribution Current user contribution.
     /// @dev Uses block.timestamp for coarse-grained timing, suitable for sale periods.
     ///      If statements are retained for clarity over ternary operators.
-    function _validateSale(
-        bool isPresale,
-        uint256 ethValue,
-        uint128 totalRaised,
-        uint128 userContribution
-    ) private view {
+    function _validateSale(bool isPresale, uint256 ethValue, uint128 totalRaised, uint128 userContribution)
+        private
+        view
+    {
         uint48 currentTime = uint48(block.timestamp);
         bool isActive = isPresale ? (_flags & 0x01 != 0) : (_flags & 0x02 != 0);
         uint48 startTime = isPresale ? presaleStartTime : idoStartTime;
@@ -677,18 +554,12 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @param buyer Buyer address.
     /// @param ethValue ETH amount sent.
     /// @dev Zero-to-one storage writes are unavoidable for dynamic mappings.
-    function _buyTokens(
-        bool isPresale,
-        address buyer,
-        uint256 ethValue
-    ) private {
+    function _buyTokens(bool isPresale, address buyer, uint256 ethValue) private {
         // Cache contributor and key state variables
         Contributor storage contributor = _contributors[buyer];
         uint128 totalRaised = isPresale ? _presaleTotalRaised : _idoTotalRaised;
         uint128 tokensSold = isPresale ? _presaleTokensSold : _idoTokensSold;
-        uint128 userContribution = isPresale
-            ? contributor.presaleContribution
-            : contributor.idoContribution;
+        uint128 userContribution = isPresale ? contributor.presaleContribution : contributor.idoContribution;
 
         // Validate sale and contribution
         _validateSale(isPresale, ethValue, totalRaised, userContribution);
@@ -699,11 +570,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
         if (tokensSold + totalTokens > allocation) revert InsufficientTokens();
 
         // Update state and handle purchase
-        bool isNewContributor = (
-            isPresale
-                ? contributor.presaleContribution
-                : contributor.idoContribution
-        ) == 0;
+        bool isNewContributor = (isPresale ? contributor.presaleContribution : contributor.idoContribution) == 0;
         uint48 currentTime = uint48(block.timestamp);
 
         if (isPresale) {
@@ -738,10 +605,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
         _nonce++;
 
         // Check if sale phase should end
-        if (
-            totalRaised + ethValue >= SALE_CAP ||
-            tokensSold + totalTokens >= allocation
-        ) {
+        if (totalRaised + ethValue >= SALE_CAP || tokensSold + totalTokens >= allocation) {
             if (isPresale) {
                 _flags &= 0xFE;
             }
@@ -749,11 +613,7 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
             else {
                 _flags &= 0xFD;
             } // Disable IDO
-            emit SalePhaseEnded(
-                isPresale,
-                uint128(totalRaised + ethValue),
-                uint128(tokensSold + totalTokens)
-            );
+            emit SalePhaseEnded(isPresale, uint128(totalRaised + ethValue), uint128(tokensSold + totalTokens));
         }
     }
 
@@ -773,16 +633,9 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
     /// @param contrib Contributor data.
     /// @return vested The amount of vested tokens.
     /// @dev Uses block.timestamp for coarse-grained timing, suitable for vesting schedules.
-    function _calculateVested(
-        bool isPresale,
-        Contributor storage contrib
-    ) private view returns (uint256 vested) {
-        uint128 vestedTokens = isPresale
-            ? contrib.presaleVestedTokens
-            : contrib.idoVestedTokens;
-        uint48 vestingStart = isPresale
-            ? contrib.presaleVestingStart
-            : contrib.idoVestingStart;
+    function _calculateVested(bool isPresale, Contributor storage contrib) private view returns (uint256 vested) {
+        uint128 vestedTokens = isPresale ? contrib.presaleVestedTokens : contrib.idoVestedTokens;
+        uint48 vestingStart = isPresale ? contrib.presaleVestingStart : contrib.idoVestingStart;
         uint48 duration = isPresale ? (24 * ONE_MONTH) : (12 * ONE_MONTH);
         uint48 cliff = isPresale ? (12 * ONE_MONTH) : 0;
 
@@ -792,12 +645,8 @@ contract RyzerIDOAndPresale is ReentrancyGuard, AccessControl {
             vested = isPresale ? contrib.presaleReleased : contrib.idoReleased;
         } else {
             uint48 elapsed = uint48(block.timestamp) - (vestingStart + cliff);
-            vested =
-                (vestedTokens * uint256(elapsed) * PRECISION) /
-                (uint256(duration) * PRECISION);
-            vested += (
-                isPresale ? contrib.presaleReleased : contrib.idoReleased
-            );
+            vested = (vestedTokens * uint256(elapsed) * PRECISION) / (uint256(duration) * PRECISION);
+            vested += (isPresale ? contrib.presaleReleased : contrib.idoReleased);
         }
     }
 

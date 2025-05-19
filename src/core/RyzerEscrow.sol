@@ -61,58 +61,18 @@ contract RyzerEscrow is
     mapping(bytes32 => mapping(address => bool)) public releaseSignatures;
     mapping(bytes32 => uint256) public releaseSignatureCount;
 
-    event EscrowInitialized(
-        address indexed usdtToken,
-        address indexed projectContract,
-        uint16 chainId
-    );
-    event Deposited(
-        bytes32 indexed orderId,
-        address indexed buyer,
-        uint256 amount,
-        bytes32 assetId,
-        uint16 chainId
-    );
-    event Released(
-        bytes32 indexed orderId,
-        address indexed to,
-        uint256 amount,
-        uint16 chainId
-    );
+    event EscrowInitialized(address indexed usdtToken, address indexed projectContract, uint16 chainId);
+    event Deposited(bytes32 indexed orderId, address indexed buyer, uint256 amount, bytes32 assetId, uint16 chainId);
+    event Released(bytes32 indexed orderId, address indexed to, uint256 amount, uint16 chainId);
     event DisputeRaised(
-        bytes32 indexed disputeId,
-        address indexed buyer,
-        string reason,
-        uint256 amount,
-        uint16 chainId
+        bytes32 indexed disputeId, address indexed buyer, string reason, uint256 amount, uint16 chainId
     );
-    event DisputeSigned(
-        bytes32 indexed disputeId,
-        address indexed signer,
-        uint16 chainId
-    );
-    event DisputeResolved(
-        bytes32 indexed disputeId,
-        address indexed resolvedTo,
-        uint256 amount,
-        uint16 chainId
-    );
+    event DisputeSigned(bytes32 indexed disputeId, address indexed signer, uint16 chainId);
+    event DisputeResolved(bytes32 indexed disputeId, address indexed resolvedTo, uint256 amount, uint16 chainId);
     event DividendsDeposited(uint256 amount, uint16 chainId);
-    event DividendsDistributed(
-        address indexed recipient,
-        uint256 amount,
-        uint16 chainId
-    );
-    event EmergencyWithdrawal(
-        address indexed recipient,
-        uint256 amount,
-        uint16 chainId
-    );
-    event CoreContractsSet(
-        address indexed usdtToken,
-        address indexed projectContract,
-        uint16 chainId
-    );
+    event DividendsDistributed(address indexed recipient, uint256 amount, uint16 chainId);
+    event EmergencyWithdrawal(address indexed recipient, uint256 amount, uint16 chainId);
+    event CoreContractsSet(address indexed usdtToken, address indexed projectContract, uint16 chainId);
 
     error InvalidAddress(address addr);
     error InvalidAmount();
@@ -132,11 +92,7 @@ contract RyzerEscrow is
     /// @param _usdtToken USDT token address
     /// @param _projectContract Project contract address
     /// @param _chainId Network chain ID
-    function initialize(
-        address _usdtToken,
-        address _projectContract,
-        uint16 _chainId
-    ) external initializer {
+    function initialize(address _usdtToken, address _projectContract, uint16 _chainId) external initializer {
         if (_usdtToken == address(0) || _projectContract == address(0)) {
             revert InvalidAddress(address(0));
         }
@@ -147,10 +103,7 @@ contract RyzerEscrow is
             revert InvalidChainId();
         }
         if (IERC20Metadata(_usdtToken).decimals() != USDT_TOKEN_DECIMAL) {
-            revert InvalidTokenDecimals(
-                "USDT",
-                IERC20Metadata(_usdtToken).decimals()
-            );
+            revert InvalidTokenDecimals("USDT", IERC20Metadata(_usdtToken).decimals());
         }
 
         __UUPSUpgradeable_init();
@@ -173,11 +126,10 @@ contract RyzerEscrow is
     /// @param _usdtToken New USDT token address
     /// @param _projectContract New project contract address
     /// @param _chainId New network chain ID
-    function setCoreContracts(
-        address _usdtToken,
-        address _projectContract,
-        uint16 _chainId
-    ) external onlyRole(ADMIN_ROLE) {
+    function setCoreContracts(address _usdtToken, address _projectContract, uint16 _chainId)
+        external
+        onlyRole(ADMIN_ROLE)
+    {
         if (_usdtToken == address(0) || _projectContract == address(0)) {
             revert InvalidAddress(address(0));
         }
@@ -188,10 +140,7 @@ contract RyzerEscrow is
             revert InvalidChainId();
         }
         if (IERC20Metadata(_usdtToken).decimals() != USDT_TOKEN_DECIMAL) {
-            revert InvalidTokenDecimals(
-                "USDT",
-                IERC20Metadata(_usdtToken).decimals()
-            );
+            revert InvalidTokenDecimals("USDT", IERC20Metadata(_usdtToken).decimals());
         }
 
         usdtToken = IERC20(_usdtToken);
@@ -202,13 +151,8 @@ contract RyzerEscrow is
 
     /// @notice Authorizes contract upgrades
     /// @param newImplementation New implementation address
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal view override onlyRole(ADMIN_ROLE) {
-        if (
-            newImplementation == address(0) ||
-            newImplementation.code.length == 0
-        ) {
+    function _authorizeUpgrade(address newImplementation) internal view override onlyRole(ADMIN_ROLE) {
+        if (newImplementation == address(0) || newImplementation.code.length == 0) {
             revert InvalidAddress(newImplementation);
         }
     }
@@ -218,24 +162,16 @@ contract RyzerEscrow is
     /// @param buyer Buyer address
     /// @param amount Deposit amount
     /// @param assetId Asset ID
-    function deposit(
-        bytes32 orderId,
-        address buyer,
-        uint256 amount,
-        bytes32 assetId
-    ) external nonReentrant whenNotPaused {
+    function deposit(bytes32 orderId, address buyer, uint256 amount, bytes32 assetId)
+        external
+        nonReentrant
+        whenNotPaused
+    {
         if (buyer == address(0)) revert InvalidAddress(buyer);
         if (amount == 0) revert InvalidAmount();
-        if (
-            msg.sender != buyer &&
-            msg.sender != IRyzerProject(projectContract).owner()
-        ) revert Unauthorized();
+        if (msg.sender != buyer && msg.sender != IRyzerProject(projectContract).owner()) revert Unauthorized();
 
-        deposits[orderId] = Deposit({
-            buyer: buyer,
-            amount: amount,
-            assetId: assetId
-        });
+        deposits[orderId] = Deposit({buyer: buyer, amount: amount, assetId: assetId});
 
         usdtToken.safeTransferFrom(buyer, address(this), amount);
         emit Deposited(orderId, buyer, amount, assetId, chainId);
@@ -245,11 +181,12 @@ contract RyzerEscrow is
     /// @param orderId Order ID
     /// @param to Recipient address
     /// @param amount Amount to release
-    function signRelease(
-        bytes32 orderId,
-        address to,
-        uint256 amount
-    ) external nonReentrant onlyRole(ADMIN_ROLE) whenNotPaused {
+    function signRelease(bytes32 orderId, address to, uint256 amount)
+        external
+        nonReentrant
+        onlyRole(ADMIN_ROLE)
+        whenNotPaused
+    {
         Deposit storage _deposit = deposits[orderId];
         if (_deposit.buyer == address(0)) revert DepositNotFound();
         if (to == address(0)) revert InvalidAddress(to);
@@ -278,9 +215,7 @@ contract RyzerEscrow is
 
     /// @notice Deposits USDT into the dividend pool
     /// @param amount Amount of USDT to deposit
-    function depositDividend(
-        uint256 amount
-    ) external nonReentrant whenNotPaused {
+    function depositDividend(uint256 amount) external nonReentrant whenNotPaused {
         if (msg.sender != projectContract && !hasRole(ADMIN_ROLE, msg.sender)) {
             revert Unauthorized();
         }
@@ -294,18 +229,13 @@ contract RyzerEscrow is
     /// @notice Distributes dividends to a recipient
     /// @param recipient Address receiving the dividends
     /// @param amount Amount of USDT to distribute
-    function distributeDividend(
-        address recipient,
-        uint256 amount
-    ) external nonReentrant whenNotPaused {
+    function distributeDividend(address recipient, uint256 amount) external nonReentrant whenNotPaused {
         if (msg.sender != projectContract && !hasRole(ADMIN_ROLE, msg.sender)) {
             revert Unauthorized();
         }
         if (recipient == address(0)) revert InvalidAddress(recipient);
         if (amount == 0) revert InvalidAmount();
-        if (
-            dividendPool < amount || usdtToken.balanceOf(address(this)) < amount
-        ) revert InsufficientFunds();
+        if (dividendPool < amount || usdtToken.balanceOf(address(this)) < amount) revert InsufficientFunds();
 
         dividendPool -= amount;
         usdtToken.safeTransfer(recipient, amount);
@@ -315,17 +245,11 @@ contract RyzerEscrow is
     /// @notice Raises a dispute for an order
     /// @param orderId Order ID
     /// @param reason Dispute reason (must be non-empty and less than 256 bytes)
-    function raiseDispute(
-        bytes32 orderId,
-        string calldata reason
-    ) external nonReentrant whenNotPaused {
+    function raiseDispute(bytes32 orderId, string calldata reason) external nonReentrant whenNotPaused {
         Deposit storage orderDeposit = deposits[orderId];
         address buyer = orderDeposit.buyer;
         if (buyer == address(0)) revert DepositNotFound();
-        if (
-            msg.sender != buyer &&
-            msg.sender != IRyzerProject(projectContract).owner()
-        ) revert Unauthorized();
+        if (msg.sender != buyer && msg.sender != IRyzerProject(projectContract).owner()) revert Unauthorized();
         if (bytes(reason).length == 0) revert InvalidParameter("empty reason");
         if (bytes(reason).length > MAX_REASON_LENGTH) {
             revert InvalidParameter("reason too long");
@@ -344,22 +268,18 @@ contract RyzerEscrow is
             resolvedTo: address(0)
         });
 
-        emit DisputeRaised(
-            disputeId,
-            buyer,
-            reason,
-            orderDeposit.amount,
-            chainId
-        );
+        emit DisputeRaised(disputeId, buyer, reason, orderDeposit.amount, chainId);
     }
 
     /// @notice Signs a dispute resolution
     /// @param disputeId Dispute ID
     /// @param resolvedTo Resolution recipient
-    function signDisputeResolution(
-        bytes32 disputeId,
-        address resolvedTo
-    ) external nonReentrant onlyRole(ADMIN_ROLE) whenNotPaused {
+    function signDisputeResolution(bytes32 disputeId, address resolvedTo)
+        external
+        nonReentrant
+        onlyRole(ADMIN_ROLE)
+        whenNotPaused
+    {
         Dispute storage dispute = disputes[disputeId];
         if (dispute.buyer == address(0)) revert DisputeNotFound();
         if (dispute.resolved) revert DisputeAlreadyResolved();
@@ -387,22 +307,14 @@ contract RyzerEscrow is
             delete disputeSignatureCount[disputeId];
             // Clear signatures to prevent reuse
             // Note: Individual signatures are not cleared to save gas, as count reset is sufficient
-            emit DisputeResolved(
-                disputeId,
-                resolvedTo,
-                dispute.amount,
-                chainId
-            );
+            emit DisputeResolved(disputeId, resolvedTo, dispute.amount, chainId);
         }
     }
 
     /// @notice Withdraws funds in emergency scenarios
     /// @param recipient Address receiving the funds
     /// @param amount Amount of USDT to withdraw
-    function emergencyWithdraw(
-        address recipient,
-        uint256 amount
-    ) external onlyRole(ADMIN_ROLE) nonReentrant {
+    function emergencyWithdraw(address recipient, uint256 amount) external onlyRole(ADMIN_ROLE) nonReentrant {
         if (recipient == address(0)) revert InvalidAddress(recipient);
         if (amount == 0) revert InvalidAmount();
         if (usdtToken.balanceOf(address(this)) < amount) {
@@ -426,9 +338,7 @@ contract RyzerEscrow is
     /// @notice Gets dispute status
     /// @param disputeId Dispute ID
     /// @return dispute Dispute details
-    function getDisputeStatus(
-        bytes32 disputeId
-    ) external view returns (Dispute memory dispute) {
+    function getDisputeStatus(bytes32 disputeId) external view returns (Dispute memory dispute) {
         return disputes[disputeId];
     }
 

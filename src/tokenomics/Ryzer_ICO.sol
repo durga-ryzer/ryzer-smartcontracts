@@ -85,43 +85,16 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
 
     // --- Events ---
     event IeoVestingSetup(address indexed ieoContract, uint256 totalAmount);
-    event TimelockDelayUpdated(
-        uint48 indexed oldDelay,
-        uint48 indexed newDelay
-    );
-    event VestingReleased(
-        address indexed beneficiary,
-        uint256 amount,
-        bool completed
-    );
-    event VestingScheduleCreated(
-        address indexed beneficiary,
-        uint256 totalAmount,
-        uint256 initialUnlock
-    );
-    event LiquidityLocked(
-        address indexed lpToken,
-        uint256 amount,
-        address indexed lockContract
-    );
-    event ActionScheduled(
-        bytes32 indexed actionId,
-        bytes data,
-        uint48 scheduledTime
-    );
+    event TimelockDelayUpdated(uint48 indexed oldDelay, uint48 indexed newDelay);
+    event VestingReleased(address indexed beneficiary, uint256 amount, bool completed);
+    event VestingScheduleCreated(address indexed beneficiary, uint256 totalAmount, uint256 initialUnlock);
+    event LiquidityLocked(address indexed lpToken, uint256 amount, address indexed lockContract);
+    event ActionScheduled(bytes32 indexed actionId, bytes data, uint48 scheduledTime);
     event ActionExecuted(bytes32 indexed actionId);
     event ActionCanceled(bytes32 indexed actionId);
-    event WalletUpdated(
-        WalletType indexed walletType,
-        address indexed oldWallet,
-        address indexed newWallet
-    );
+    event WalletUpdated(WalletType indexed walletType, address indexed oldWallet, address indexed newWallet);
     event EmergencyPausedUpdated(bool indexed paused);
-    event RoleChanged(
-        bytes32 indexed role,
-        address indexed account,
-        bool granted
-    );
+    event RoleChanged(bytes32 indexed role, address indexed account, bool granted);
 
     // --- Errors ---
     error InvalidParameter(string parameter);
@@ -164,14 +137,7 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
         emit RoleChanged(DEFAULT_ADMIN_ROLE, admin, true);
         emit RoleChanged(ADMIN_ROLE, admin, true);
 
-        _initializeWallets(
-            treasuryWallet,
-            teamWallet,
-            privateWallet,
-            stakingWallet,
-            marketingWallet,
-            ieoContract
-        );
+        _initializeWallets(treasuryWallet, teamWallet, privateWallet, stakingWallet, marketingWallet, ieoContract);
         _initializeVesting();
 
         deploymentTimestamp = uint48(block.timestamp);
@@ -185,16 +151,13 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
 
     // --- Admin Functions ---
 
-    function setupIeoContractAndVesting(
-        address _ieoContract
-    ) external onlyRole(ADMIN_ROLE) whenNotPaused {
+    function setupIeoContractAndVesting(address _ieoContract) external onlyRole(ADMIN_ROLE) whenNotPaused {
         if (_ieoContract == address(0)) revert InvalidParameter("ieoContract");
         if (wallets[WalletType.IEO] != address(0)) {
             revert IeoAlreadyInitialized();
         }
         wallets[WalletType.IEO] = _ieoContract;
-        uint256 totalMinted = DEX_LIQUIDITY_ALLOCATION +
-            CEX_LIQUIDITY_ALLOCATION;
+        uint256 totalMinted = DEX_LIQUIDITY_ALLOCATION + CEX_LIQUIDITY_ALLOCATION;
         _mint(wallets[WalletType.IEO], totalMinted);
         _setupVesting(
             wallets[WalletType.IEO],
@@ -208,9 +171,7 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
 
     /// @notice Updates the timelock delay.
     /// @param newDelay New delay in seconds (1 hour to 30 days).
-    function updateTimelockDelay(
-        uint48 newDelay
-    ) external onlyRole(ADMIN_ROLE) whenNotPaused {
+    function updateTimelockDelay(uint48 newDelay) external onlyRole(ADMIN_ROLE) whenNotPaused {
         if (newDelay < 1 hours || newDelay > 30 days) {
             revert InvalidParameter("timelockDelay");
         }
@@ -224,20 +185,15 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
     /// @param lpToken LP token address.
     /// @param amount Amount to lock.
     /// @param lockContract Lock contract address.
-    function scheduleLockLiquidity(
-        address lpToken,
-        uint256 amount,
-        address lockContract
-    ) external onlyRole(ADMIN_ROLE) whenNotPaused {
-        if (
-            lpToken == address(0) || lockContract == address(0) || amount == 0
-        ) {
+    function scheduleLockLiquidity(address lpToken, uint256 amount, address lockContract)
+        external
+        onlyRole(ADMIN_ROLE)
+        whenNotPaused
+    {
+        if (lpToken == address(0) || lockContract == address(0) || amount == 0) {
             revert InvalidParameter("lpToken or lockContract or amount");
         }
-        bytes memory data = abi.encodeCall(
-            this.executeLockLiquidity,
-            (lpToken, amount, lockContract)
-        ); // Type-safe encoding
+        bytes memory data = abi.encodeCall(this.executeLockLiquidity, (lpToken, amount, lockContract)); // Type-safe encoding
         _scheduleTimelockAction(data);
     }
 
@@ -245,20 +201,14 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
     /// @param lpToken LP token address.
     /// @param amount Amount to lock.
     /// @param lockContract Lock contract address.
-    function executeLockLiquidity(
-        address lpToken,
-        uint256 amount,
-        address lockContract
-    ) external nonReentrant onlyRole(ADMIN_ROLE) whenNotPaused {
-        bytes32 actionId = keccak256(
-            abi.encode(
-                "executeLockLiquidity",
-                lpToken,
-                amount,
-                lockContract,
-                _timelockNonce - 1
-            )
-        );
+    function executeLockLiquidity(address lpToken, uint256 amount, address lockContract)
+        external
+        nonReentrant
+        onlyRole(ADMIN_ROLE)
+        whenNotPaused
+    {
+        bytes32 actionId =
+            keccak256(abi.encode("executeLockLiquidity", lpToken, amount, lockContract, _timelockNonce - 1));
         _executeTimelockAction(actionId);
 
         uint256 balanceBefore = IERC20(lpToken).balanceOf(lockContract);
@@ -274,9 +224,7 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
 
     /// @notice Cancels a timelock action.
     /// @param actionId Action ID to cancel.
-    function cancelTimelockAction(
-        bytes32 actionId
-    ) external onlyRole(ADMIN_ROLE) whenNotPaused {
+    function cancelTimelockAction(bytes32 actionId) external onlyRole(ADMIN_ROLE) whenNotPaused {
         TimelockAction storage action = timelockActions[actionId];
         if (action.scheduledTime == 0 || action.executed) {
             revert InvalidParameter("actionId");
@@ -289,10 +237,7 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
     /// @notice Updates a wallet address.
     /// @param walletType Wallet type to update.
     /// @param newWallet New wallet address.
-    function updateWallet(
-        WalletType walletType,
-        address newWallet
-    ) external onlyRole(ADMIN_ROLE) whenNotPaused {
+    function updateWallet(WalletType walletType, address newWallet) external onlyRole(ADMIN_ROLE) whenNotPaused {
         if (newWallet == address(0)) revert InvalidParameter("newWallet");
         address oldWallet = wallets[walletType];
         if (oldWallet == newWallet) return; // Avoid re-storing same value
@@ -311,10 +256,7 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
     /// @notice Revokes a role from an account.
     /// @param role Role to revoke.
     /// @param account Account to revoke the role from.
-    function revokeRoleForAddress(
-        bytes32 role,
-        address account
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
+    function revokeRoleForAddress(bytes32 role, address account) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         if (account == address(0)) revert InvalidParameter("account");
         if (!hasRole(role, account)) revert InvalidParameter("role");
         _revokeRole(role, account);
@@ -327,9 +269,7 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
     /// @param beneficiary Beneficiary address.
     /// @dev Uses block.timestamp for vesting calculations, which is acceptable for coarse-grained time measurements.
     ///      Revert conditions are necessary for security but are limited to prevent DoS attacks.
-    function releaseVestedTokens(
-        address beneficiary
-    ) external nonReentrant whenNotPaused {
+    function releaseVestedTokens(address beneficiary) external nonReentrant whenNotPaused {
         if (msg.sender != beneficiary && !hasRole(ADMIN_ROLE, msg.sender)) {
             revert InvalidParameter("caller");
         }
@@ -357,20 +297,20 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
     /// @notice Releases vested tokens for multiple beneficiaries.
     /// @param beneficiaries Array of beneficiary addresses.
     /// @dev Limited by MAX_BATCH_SIZE to prevent gas limit issues and DoS attacks.
-    function batchReleaseVestedTokens(
-        address[] calldata beneficiaries
-    ) external nonReentrant onlyRole(ADMIN_ROLE) whenNotPaused {
+    function batchReleaseVestedTokens(address[] calldata beneficiaries)
+        external
+        nonReentrant
+        onlyRole(ADMIN_ROLE)
+        whenNotPaused
+    {
         uint256 length = beneficiaries.length;
         if (length == 0 || length > MAX_BATCH_SIZE) revert BatchSizeExceeded();
         uint256 totalReleasable;
 
-        for (uint256 i = 0; i < length; ) {
+        for (uint256 i = 0; i < length;) {
             address beneficiary = beneficiaries[i];
             VestingSchedule storage schedule = _vestingSchedules[beneficiary];
-            if (
-                schedule.totalAmount == 0 ||
-                block.timestamp < schedule.startTime + schedule.cliff
-            ) {
+            if (schedule.totalAmount == 0 || block.timestamp < schedule.startTime + schedule.cliff) {
                 unchecked {
                     ++i;
                 }
@@ -398,9 +338,7 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
         }
 
         if (totalReleasable != 0) {
-            _totalReleasedVestedAmount =
-                _totalReleasedVestedAmount +
-                totalReleasable;
+            _totalReleasedVestedAmount = _totalReleasedVestedAmount + totalReleasable;
             emit VestingReleased(address(0), totalReleasable, false); // Single event for batch
         }
     }
@@ -410,9 +348,7 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
     /// @notice Gets vesting status for a beneficiary.
     /// @param beneficiary Beneficiary address.
     /// @return status Vesting status struct.
-    function getVestingStatus(
-        address beneficiary
-    ) external view returns (VestingStatus memory status) {
+    function getVestingStatus(address beneficiary) external view returns (VestingStatus memory status) {
         VestingSchedule storage schedule = _vestingSchedules[beneficiary];
         status.totalAmount = schedule.totalAmount;
         status.released = schedule.released;
@@ -420,10 +356,7 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
         status.startTime = schedule.startTime;
         status.duration = schedule.duration;
         status.cliff = schedule.cliff;
-        if (
-            status.totalAmount == 0 ||
-            block.timestamp < schedule.startTime + schedule.cliff
-        ) {
+        if (status.totalAmount == 0 || block.timestamp < schedule.startTime + schedule.cliff) {
             status.releasable = 0;
         } else {
             uint256 vested = _calculateVested(schedule);
@@ -436,9 +369,7 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
     /// @return scheduledTime Scheduled execution time.
     /// @return executed Execution status.
     /// @return data Action data.
-    function getTimelockAction(
-        bytes32 actionId
-    )
+    function getTimelockAction(bytes32 actionId)
         external
         view
         returns (uint48 scheduledTime, bool executed, bytes memory data)
@@ -479,11 +410,8 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
         address ieoContract
     ) private {
         if (
-            treasuryWallet == address(0) ||
-            teamWallet == address(0) ||
-            privateWallet == address(0) ||
-            stakingWallet == address(0) ||
-            marketingWallet == address(0)
+            treasuryWallet == address(0) || teamWallet == address(0) || privateWallet == address(0)
+                || stakingWallet == address(0) || marketingWallet == address(0)
         ) revert InvalidParameter("wallet");
 
         wallets[WalletType.Treasury] = treasuryWallet;
@@ -497,59 +425,23 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
     /// @notice Initializes vesting schedules for token allocations.
     function _initializeVesting() private {
         // Private Sale
-        _setupVesting(
-            wallets[WalletType.Private],
-            PRIVATE_ALLOCATION,
-            0,
-            4 * ONE_MONTH,
-            12 * ONE_MONTH
-        );
+        _setupVesting(wallets[WalletType.Private], PRIVATE_ALLOCATION, 0, 4 * ONE_MONTH, 12 * ONE_MONTH);
 
         // public move to setup ieo
 
         // team
-        _setupVesting(
-            wallets[WalletType.Team],
-            TEAM_ALLOCATION,
-            0,
-            12 * ONE_MONTH,
-            36 * ONE_MONTH
-        );
+        _setupVesting(wallets[WalletType.Team], TEAM_ALLOCATION, 0, 12 * ONE_MONTH, 36 * ONE_MONTH);
 
         // staking
-        _setupVesting(
-            wallets[WalletType.Staking],
-            STAKING_ALLOCATION,
-            0,
-            0,
-            48 * ONE_MONTH
-        );
+        _setupVesting(wallets[WalletType.Staking], STAKING_ALLOCATION, 0, 0, 48 * ONE_MONTH);
 
         // treasury
-        _setupVesting(
-            wallets[WalletType.Treasury],
-            ECOSYSTEM_ALLOCATION,
-            0,
-            12 * ONE_MONTH,
-            36 * ONE_MONTH
-        );
+        _setupVesting(wallets[WalletType.Treasury], ECOSYSTEM_ALLOCATION, 0, 12 * ONE_MONTH, 36 * ONE_MONTH);
 
-        _setupVesting(
-            wallets[WalletType.Treasury],
-            TREASURY_ALLOCATION,
-            0,
-            12 * ONE_MONTH,
-            36 * ONE_MONTH
-        );
+        _setupVesting(wallets[WalletType.Treasury], TREASURY_ALLOCATION, 0, 12 * ONE_MONTH, 36 * ONE_MONTH);
 
         // marketing
-        _setupVesting(
-            wallets[WalletType.Marketing],
-            MARKETING_ALLOCATION,
-            0,
-            12 * ONE_MONTH,
-            36 * ONE_MONTH
-        );
+        _setupVesting(wallets[WalletType.Marketing], MARKETING_ALLOCATION, 0, 12 * ONE_MONTH, 36 * ONE_MONTH);
 
         if (totalSupply() > TOTAL_SUPPLY_CAP) revert SupplyCapExceeded();
     }
@@ -567,12 +459,7 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
         uint48 cliff,
         uint48 duration
     ) private {
-        if (
-            amount == 0 ||
-            initialUnlockAmount > amount ||
-            duration == 0 ||
-            cliff >= duration
-        ) {
+        if (amount == 0 || initialUnlockAmount > amount || duration == 0 || cliff >= duration) {
             revert InvalidParameter("vesting parameters");
         }
 
@@ -596,11 +483,7 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
             _mint(beneficiary, initialUnlockAmount);
         }
 
-        emit VestingScheduleCreated(
-            beneficiary,
-            vestingAmount,
-            initialUnlockAmount
-        );
+        emit VestingScheduleCreated(beneficiary, vestingAmount, initialUnlockAmount);
     }
 
     /// @notice Schedules a timelock action.
@@ -638,9 +521,7 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
     /// @param schedule Vesting schedule.
     /// @return Vested amount.
     /// @dev Uses block.timestamp for coarse-grained vesting calculations, which is standard practice.
-    function _calculateVested(
-        VestingSchedule storage schedule
-    ) private view returns (uint256) {
+    function _calculateVested(VestingSchedule storage schedule) private view returns (uint256) {
         if (block.timestamp >= schedule.startTime + schedule.duration) {
             return schedule.totalAmount;
         }
@@ -649,7 +530,6 @@ contract RyzerToken is ERC20, ReentrancyGuard, AccessControl {
         }
         uint48 elapsed = uint48(block.timestamp) - schedule.startTime;
         uint48 vestingPeriod = schedule.duration - schedule.cliff;
-        return
-            (schedule.totalAmount * (elapsed - schedule.cliff)) / vestingPeriod;
+        return (schedule.totalAmount * (elapsed - schedule.cliff)) / vestingPeriod;
     }
 }
