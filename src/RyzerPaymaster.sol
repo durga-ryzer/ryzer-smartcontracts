@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.29;
+pragma solidity 0.8.29;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -195,12 +195,12 @@ contract RyzerPaymaster is Initializable, UUPSUpgradeable, AccessControlUpgradea
         emit GasSponsored(user, amount, gasToken);
     }
 
-    function validatePaymasterUserOp(UserOperation calldata userOp, bytes32, /*userOpHash*/ uint256 maxCost)
-        external
-        nonReentrant
-        notEmergencyStopped
-        returns (bytes memory context, uint256 validationData)
-    {
+    function validatePaymasterUserOp(
+        UserOperation calldata userOp,
+        bytes32,
+        /*userOpHash*/
+        uint256 maxCost
+    ) external nonReentrant notEmergencyStopped returns (bytes memory context, uint256 validationData) {
         require(msg.sender == entryPoint, "Only EntryPoint");
         require(RyzerWalletFactory(factory).isWallet(userOp.sender), "Not a wallet");
 
@@ -211,11 +211,11 @@ contract RyzerPaymaster is Initializable, UUPSUpgradeable, AccessControlUpgradea
 
         uint256 hour = (block.timestamp % 86400) / 3600;
         if (hour >= offPeakStart && hour < offPeakEnd && offPeakDiscount > 0) {
-            feeTier = feeTier * (10000 - offPeakDiscount) / 10000;
+            feeTier = (feeTier * (10000 - offPeakDiscount)) / 10000;
         }
 
         if (tokenBalances[userOp.sender] >= volumeDiscountThreshold && volumeDiscount > 0) {
-            feeTier = feeTier * (10000 - volumeDiscount) / 10000;
+            feeTier = (feeTier * (10000 - volumeDiscount)) / 10000;
         }
 
         uint256 adjustedCost = (maxCost * (10000 + feeTier)) / 10000;
