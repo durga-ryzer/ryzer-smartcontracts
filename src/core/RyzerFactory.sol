@@ -118,22 +118,40 @@ contract RyzerFactory is
     ReentrancyGuardUpgradeable,
     PausableUpgradeable
 {
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    uint256 public constant MIN_NAME_LENGTH = 3;
-    uint256 public constant MAX_NAME_LENGTH = 100;
-    uint256 public constant MIN_JURISDICTION_LENGTH = 2;
-    uint256 public constant MAX_JURISDICTION_LENGTH = 100;
-    uint256 public constant MAX_TEMPLATE_UPDATE_DELAY = 7 days;
-    uint256 public constant MIN_SIGNATURES = 2;
-    uint256 public constant MAX_SIGNATURES = 10;
-    uint256 public constant USDT_TOKEN_DECIMAL = 6;
-    uint256 public constant RYZERX_TOKEN_DECIMAL = 18;
+    /*//////////////////////////////////////////////////////////////
+                           ERRORS
+    //////////////////////////////////////////////////////////////*/
+    error InvalidAddress(address addr);
+    error AddressAlreadyOwnsCompany(address addr);
+    error InvalidCompanyType();
+    error InvalidNameLength();
+    error InvalidJurisdictionLength();
+    error InvalidAssetType();
+    error InvalidParameter(string parameter);
+    error DeploymentFailed(string reason);
+    // error InvalidTemplateType();
+    // error InvalidDelay();
+    error InsufficientBalance();
+    //error InvalidCompany();
+    error NotCompanyOwner();
+    // error ProposalNotFound();
+    // error VotingPeriodEnded();
+    // error AlreadySigned();
+    // error QuorumNotMet();
+    // error InsufficientSignatures();
+    // error ProposalExpired();
+    error InvalidSignatureCount();
+    error InvalidTokenDecimals(string token, uint8 decimals);
 
+    /*//////////////////////////////////////////////////////////////
+                         TYPE DECLARATIONS
+    //////////////////////////////////////////////////////////////*/
     enum CompanyType {
         LLC,
         CORP,
         PARTNERSHIP
     }
+
     enum TemplateType {
         PROJECT,
         ESCROW,
@@ -186,6 +204,20 @@ contract RyzerFactory is
         address dao;
     }
 
+    /*//////////////////////////////////////////////////////////////
+                           STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    uint256 public constant MIN_NAME_LENGTH = 3;
+    uint256 public constant MAX_NAME_LENGTH = 100;
+    uint256 public constant MIN_JURISDICTION_LENGTH = 2;
+    uint256 public constant MAX_JURISDICTION_LENGTH = 100;
+    uint256 public constant MAX_TEMPLATE_UPDATE_DELAY = 7 days;
+    uint256 public constant MIN_SIGNATURES = 2;
+    uint256 public constant MAX_SIGNATURES = 10;
+    uint256 public constant USDT_TOKEN_DECIMAL = 6;
+    uint256 public constant RYZERX_TOKEN_DECIMAL = 18;
+
     IERC20 public usdtToken;
     IERC20 public ryzerXToken;
     IRyzerRegistry public ryzerRegistry;
@@ -205,6 +237,9 @@ contract RyzerFactory is
     mapping(uint256 => mapping(address => address)) public projectOrderManagers;
     mapping(uint256 => mapping(address => address)) public projectDAOs;
 
+    /*//////////////////////////////////////////////////////////////
+                           EVENTS
+    //////////////////////////////////////////////////////////////*/
     event FactoryInitialized(address indexed usdtToken, address indexed ryzerXToken, address indexed registry);
     event CompanyRegistered(
         uint256 indexed companyId, address indexed owner, string name, string jurisdiction, CompanyType companyType
@@ -218,27 +253,9 @@ contract RyzerFactory is
     event TemplateUpdated(address indexed templateAddress, TemplateType templateType);
     event CoreContractsSet(address indexed usdtToken, address indexed ryzerXToken, address indexed registry);
 
-    error InvalidAddress(address addr);
-    error AddressAlreadyOwnsCompany(address addr);
-    error InvalidCompanyType();
-    error InvalidNameLength();
-    error InvalidJurisdictionLength();
-    error InvalidAssetType();
-    error InvalidParameter(string parameter);
-    error DeploymentFailed(string reason);
-    // error InvalidTemplateType();
-    // error InvalidDelay();
-    error InsufficientBalance();
-    //error InvalidCompany();
-    error NotCompanyOwner();
-    // error ProposalNotFound();
-    // error VotingPeriodEnded();
-    // error AlreadySigned();
-    // error QuorumNotMet();
-    // error InsufficientSignatures();
-    // error ProposalExpired();
-    error InvalidSignatureCount();
-    error InvalidTokenDecimals(string token, uint8 decimals);
+    /*//////////////////////////////////////////////////////////////
+                           EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Initializes the factory contract
     function initialize(
@@ -344,31 +361,6 @@ contract RyzerFactory is
         emit CompanyRegistered(newCompanyId, msg.sender, params.name, params.jurisdiction, params.companyType);
     }
 
-    /// @notice Validates project parameters
-    function _validateProjectParams(uint256 companyId, ProjectParams calldata params) private view {
-        if (companyId == 0) revert InvalidParameter("companyId");
-        if (bytes(params.name).length < MIN_NAME_LENGTH || bytes(params.name).length > MAX_NAME_LENGTH) {
-            revert InvalidNameLength();
-        }
-        if (
-            params.assetType != bytes32("Commercial") && params.assetType != bytes32("Residential")
-                && params.assetType != bytes32("Holiday") && params.assetType != bytes32("Land")
-        ) revert InvalidAssetType();
-        if (
-            params.minInvestment == 0 || params.maxInvestment < params.minInvestment || params.totalSupply == 0
-                || params.tokenPrice == 0 || params.cancelDelay == 0 || params.eoiPct == 0 || params.eoiPct > 50
-                || params.dividendPct > 50 || params.premintAmount > params.totalSupply || params.metadataCID == bytes32(0)
-                || params.legalMetadataCID == bytes32(0) || params.projectOwner == address(0)
-                || params.factory != address(this)
-        ) revert InvalidParameter("invalid project parameter");
-        if (params.requiredSignatures < MIN_SIGNATURES || params.requiredSignatures > MAX_SIGNATURES) {
-            revert InvalidSignatureCount();
-        }
-        if (params.chainId != uint16(block.chainid)) {
-            revert InvalidParameter("chainId");
-        }
-    }
-
     /// @notice Creates a new RWA project
     function createProject(uint256 companyId, ProjectParams calldata params)
         external
@@ -400,7 +392,7 @@ contract RyzerFactory is
             abi.encode(
                 IRyzerProject.ProjectInitParams({
                     name: params.name,
-                    symbol: string(abi.encodePacked("RWA-", params.name)),
+                    symbol: string(abi.encode("RWA-", params.name)), // fix collisions (need to be unique)
                     maxSupply: params.totalSupply,
                     tokenPrice: params.tokenPrice,
                     cancelDelay: params.cancelDelay,
@@ -486,6 +478,37 @@ contract RyzerFactory is
         _unpause();
     }
 
+    /*//////////////////////////////////////////////////////////////
+                           PRIVATE VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+    /// @notice Validates project parameters
+    function _validateProjectParams(uint256 companyId, ProjectParams calldata params) private view {
+        if (companyId == 0) revert InvalidParameter("companyId");
+        if (bytes(params.name).length < MIN_NAME_LENGTH || bytes(params.name).length > MAX_NAME_LENGTH) {
+            revert InvalidNameLength();
+        }
+        if (
+            params.assetType != bytes32("Commercial") && params.assetType != bytes32("Residential")
+                && params.assetType != bytes32("Holiday") && params.assetType != bytes32("Land")
+        ) revert InvalidAssetType();
+        if (
+            params.minInvestment == 0 || params.maxInvestment < params.minInvestment || params.totalSupply == 0
+                || params.tokenPrice == 0 || params.cancelDelay == 0 || params.eoiPct == 0 || params.eoiPct > 50
+                || params.dividendPct > 50 || params.premintAmount > params.totalSupply || params.metadataCID == bytes32(0)
+                || params.legalMetadataCID == bytes32(0) || params.projectOwner == address(0)
+                || params.factory != address(this)
+        ) revert InvalidParameter("invalid project parameter");
+        if (params.requiredSignatures < MIN_SIGNATURES || params.requiredSignatures > MAX_SIGNATURES) {
+            revert InvalidSignatureCount();
+        }
+        if (params.chainId != uint16(block.chainid)) {
+            revert InvalidParameter("chainId");
+        }
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                           EXTERNAL VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
     /// @notice Gets project contracts for a company
     function getProjectContracts(uint256 companyId, address project)
         external
