@@ -129,6 +129,7 @@ contract RyzerRegistry is
                            EVENTS
     //////////////////////////////////////////////////////////////*/
     event RegistryInitialized(uint16 chainId);
+    event FactoryUpdated(address factory);
     event CompanyRegistered(
         uint256 indexed companyId,
         address indexed owner,
@@ -220,6 +221,18 @@ contract RyzerRegistry is
     function setFactory(address _factory) external onlyRole(ADMIN_ROLE) {
         if (_factory == address(0)) revert InvalidAddress(_factory);
         factory = _factory;
+        emit FactoryUpdated(factory);
+    }
+
+    // Added to get unexpected transfers
+    function withdraw() external nonReentrant onlyRole(ADMIN_ROLE) {
+        uint256 balance = address(this).balance;
+
+        address admin = _msgSender();
+        require(balance > 0, "No Ether to withdraw");
+
+        (bool success, ) = admin.call{value: balance}("");
+        require(success, "Transfer failed");
     }
 
     /// @notice Registers a new company
@@ -235,8 +248,8 @@ contract RyzerRegistry is
         string calldata jurisdiction
     )
         external
-        onlyRole(REGISTRY_ADMIN_ROLE)
         nonReentrant
+        onlyRole(REGISTRY_ADMIN_ROLE)
         whenNotPaused
         returns (uint256)
     {
@@ -272,8 +285,8 @@ contract RyzerRegistry is
         ProjectParams calldata params
     )
         external
-        onlyRole(REGISTRY_ADMIN_ROLE)
         nonReentrant
+        onlyRole(REGISTRY_ADMIN_ROLE)
         onlyValidCompany(companyId)
         whenNotPaused
         returns (uint256)
