@@ -198,15 +198,15 @@ contract RyzerRegistry is
     }
 
     // Added to get unexpected transfers
-    function withdraw() external nonReentrant onlyRole(ADMIN_ROLE) {
-        uint256 balance = address(this).balance;
+    // function withdraw() external nonReentrant onlyRole(ADMIN_ROLE) {
+    //     uint256 balance = address(this).balance;
 
-        address admin = _msgSender();
-        require(balance > 0, "No Ether to withdraw");
+    //     address admin = _msgSender();
+    //     require(balance > 0, "No Ether to withdraw");
 
-        (bool success,) = admin.call{value: balance}("");
-        require(success, "Transfer failed");
-    }
+    //     (bool success,) = admin.call{value: balance}("");
+    //     require(success, "Transfer failed");
+    // }
 
     /// @notice Registers a new company
     /// @param owner Company owner

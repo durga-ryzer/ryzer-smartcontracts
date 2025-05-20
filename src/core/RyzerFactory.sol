@@ -392,7 +392,7 @@ contract RyzerFactory is
             abi.encode(
                 IRyzerProject.ProjectInitParams({
                     name: params.name,
-                    symbol: string(abi.encode("RWA-", params.name)), // fix collisions (need to be unique)
+                    symbol: string((abi.encodePacked("RWA-", params.name))), // fix collisions (need to be unique)
                     maxSupply: params.totalSupply,
                     tokenPrice: params.tokenPrice,
                     cancelDelay: params.cancelDelay,
