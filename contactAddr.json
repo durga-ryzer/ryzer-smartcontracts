@@ -4,7 +4,8 @@
     "EntryPoint" : "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
     "RyzerWalletCore" : "0x0346f13aD05AfA83D5138958dF95e5AC0216Fc0c",
     "RyzerWalletFactory" : "0x00E9DE04A1361130861C2dA1fC4e0809E21fd1f8",
-
+    "RyzerTokenManagement" : "0xF5cAf2243a7eaf67D6A477affbA390999bC5653e",
+    "RyzerWalletRecovery" : "0x4BDfb66d7Ef1EfE2A1c012431EB5e6e412f5a8B1",
 
 
     "RyzerRegistry": "0xb26c7afBC803cD5BD00c83D29821AAd09f5098f1",
@@ -13,5 +14,8 @@
     "RyzerEscrow" : "0xCDAC5a3af1aE817Ed7C41D9096E72309fc9FC01F",
     "RyzerOrderManagement" : "0x1d0D1D095a30afA5CCEDb7197f6345d6dcCAB9cE",
     "RyzerProject" : "0x3eb608147848755b44b0bE770ffb24453Ef02F4C",
-    "RyzerRealEstateToken" : "0xa32769e990E4f7aB379adD4036EE6f6Fd537d3d4"
+    "RyzerRealEstateToken" : "0xa32769e990E4f7aB379adD4036EE6f6Fd537d3d4",
+    "USDTMOCK": "0x8EBe3F72cBbc78bF0802180a72D73cCE82f821c2",
+    "RyzerFactory": "0x88f0ebae9639Cb683bB63C1BCa08ed2b728B02d0",
+    "FactoryProxy": "0xB87fa1C4d6FFd80a0C8c2ed833732F3f1883f014"
 }
