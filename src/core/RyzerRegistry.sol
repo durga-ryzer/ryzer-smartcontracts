@@ -214,10 +214,10 @@ contract RyzerRegistry is
     /// @param companyType Company type
     /// @param jurisdiction Company jurisdiction
     /// @return New company ID
-    function registerCompany(address owner, string calldata name, CompanyType companyType, string calldata jurisdiction)
+    function registerCompany(address owner, string calldata name, string calldata jurisdiction, CompanyType companyType)
         external
         nonReentrant
-        onlyRole(REGISTRY_ADMIN_ROLE)
+        onlyRole(REGISTRY_ADMIN_ROLE) //@ask
         whenNotPaused
         returns (uint256)
     {

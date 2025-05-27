@@ -8,11 +8,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract UsdtMock is ERC20, Ownable, ERC20Permit {
     uint8 private _decimals;
-    constructor()
-        ERC20("USDT", "USDT")
-        Ownable(msg.sender)
-        ERC20Permit("USDT")
-    {
+
+    constructor() ERC20("USDT", "USDT") Ownable(msg.sender) ERC20Permit("USDT") {
         _decimals = 6;
         _mint(msg.sender, 1000_000_000);
     }
@@ -21,7 +18,7 @@ contract UsdtMock is ERC20, Ownable, ERC20Permit {
         _mint(to, amount);
     }
 
-     function decimals() public view virtual override returns (uint8) {
+    function decimals() public view virtual override returns (uint8) {
         return _decimals;
     }
 }
