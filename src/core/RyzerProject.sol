@@ -11,6 +11,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./interfaces/IRyzerEscrow.sol";
 import "./interfaces/IRyzerOrderManager.sol";
+
 //import {IRyzerDAO} from "./interfaces/IRyzerDAO.sol";
 
 /// @title RyzerProject
@@ -107,7 +108,8 @@ contract RyzerProject is
 
     // Role identifiers
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    bytes32 public constant PROJECT_ADMIN_ROLE = keccak256("PROJECT_ADMIN_ROLE");
+    bytes32 public constant PROJECT_ADMIN_ROLE =
+        keccak256("PROJECT_ADMIN_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     // Constants
@@ -148,16 +150,50 @@ contract RyzerProject is
     /*//////////////////////////////////////////////////////////////
                          EVENTS
     //////////////////////////////////////////////////////////////*/
-    event LockPeriodSet(address indexed user, uint48 unlockTime, uint16 chainId);
-    event BatchLockPeriodSet(uint256 userCount, uint48 unlockTime, uint16 chainId);
-    event ProjectDeactivated(address indexed project, bytes32 reason, uint16 chainId);
-    event MetadataUpdateProposed(uint256 indexed updateId, bytes32 newCID, bool isLegal, uint16 chainId);
-    event MetadataUpdateSigned(uint256 indexed updateId, address indexed signer, uint16 chainId);
-    event MetadataUpdated(uint256 indexed updateId, bytes32 oldCID, bytes32 newCID, bool isLegal, uint16 chainId);
-    event ProjectContractsSet(
-        address indexed escrow, address indexed orderManager, address indexed dao, uint16 chainId
+    event LockPeriodSet(
+        address indexed user,
+        uint48 unlockTime,
+        uint16 chainId
     );
-    event EmergencyWithdrawal(address indexed recipient, uint256 amount, uint16 chainId);
+    event BatchLockPeriodSet(
+        uint256 userCount,
+        uint48 unlockTime,
+        uint16 chainId
+    );
+    event ProjectDeactivated(
+        address indexed project,
+        bytes32 reason,
+        uint16 chainId
+    );
+    event MetadataUpdateProposed(
+        uint256 indexed updateId,
+        bytes32 newCID,
+        bool isLegal,
+        uint16 chainId
+    );
+    event MetadataUpdateSigned(
+        uint256 indexed updateId,
+        address indexed signer,
+        uint16 chainId
+    );
+    event MetadataUpdated(
+        uint256 indexed updateId,
+        bytes32 oldCID,
+        bytes32 newCID,
+        bool isLegal,
+        uint16 chainId
+    );
+    event ProjectContractsSet(
+        address indexed escrow,
+        address indexed orderManager,
+        address indexed dao,
+        uint16 chainId
+    );
+    event EmergencyWithdrawal(
+        address indexed recipient,
+        uint256 amount,
+        uint16 chainId
+    );
     event UsdtTokenSet(address indexed usdtToken, uint16 chainId);
 
     /*//////////////////////////////////////////////////////////////
@@ -165,7 +201,9 @@ contract RyzerProject is
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Sets the USDT token contract
-    function setUsdtToken(address _usdtToken) external onlyRole(ADMIN_ROLE) {
+    function setUsdtToken(
+        address _usdtToken //onlyRole(ADMIN_ROLE)
+    ) external {
         if (_usdtToken == address(0)) revert InvalidAddress(_usdtToken);
         if (IERC20Metadata(_usdtToken).decimals() != 6) {
             revert InvalidToken(_usdtToken);
@@ -175,7 +213,10 @@ contract RyzerProject is
     }
 
     /// @notice Proposes a metadata update
-    function proposeMetadataUpdate(bytes32 newCID, bool isLegal) external onlyRole(PROJECT_ADMIN_ROLE) whenNotPaused {
+    function proposeMetadataUpdate(
+        bytes32 newCID,
+        bool isLegal
+    ) external onlyRole(PROJECT_ADMIN_ROLE) whenNotPaused {
         if (newCID == bytes32(0)) revert InvalidMetadataCID(newCID);
         uint256 updateId = metadataUpdateCount++;
         MetadataUpdate storage update = metadataUpdates[updateId];
@@ -188,7 +229,9 @@ contract RyzerProject is
     }
 
     /// @notice Approves a metadata update
-    function approveMetadataUpdate(uint256 updateId) external onlyRole(PROJECT_ADMIN_ROLE) whenNotPaused {
+    function approveMetadataUpdate(
+        uint256 updateId
+    ) external onlyRole(PROJECT_ADMIN_ROLE) whenNotPaused {
         MetadataUpdate storage update = metadataUpdates[updateId];
         if (update.newCID == bytes32(0)) revert InvalidMetadataUpdate(updateId);
         if (update.executed) revert UpdateAlreadyExecuted(updateId);
@@ -206,7 +249,13 @@ contract RyzerProject is
                 metadataCID = update.newCID;
             }
             update.executed = true;
-            emit MetadataUpdated(updateId, oldCID, update.newCID, update.isLegal, chainId);
+            emit MetadataUpdated(
+                updateId,
+                oldCID,
+                update.newCID,
+                update.isLegal,
+                chainId
+            );
         }
     }
 
@@ -216,7 +265,10 @@ contract RyzerProject is
 
     /// @notice Initializes the contract
     function initialize(bytes memory initData) public virtual initializer {
-        ProjectInitParams memory params = abi.decode(initData, (ProjectInitParams));
+        ProjectInitParams memory params = abi.decode(
+            initData,
+            (ProjectInitParams)
+        );
         _validateInitParams(params);
 
         __UUPSUpgradeable_init();
@@ -227,10 +279,6 @@ contract RyzerProject is
 
         _setProjectState(params);
 
-        if (params.premintAmount > 0) {
-            _mint(params.projectOwner, params.premintAmount * TOKEN_DECIMALS);
-        }
-
         _grantRole(DEFAULT_ADMIN_ROLE, params.projectOwner);
         _grantRole(ADMIN_ROLE, params.projectOwner);
         _setRoleAdmin(PROJECT_ADMIN_ROLE, ADMIN_ROLE);
@@ -240,17 +288,25 @@ contract RyzerProject is
     }
 
     /// @notice Sets project-related contracts
-    function setProjectContracts(address _escrow, address _orderManager, address _dao)
-        public
-        virtual
-        onlyRole(ADMIN_ROLE)
-    {
-        if (_escrow == address(0) || _orderManager == address(0) || _dao == address(0)) {
+    function setProjectContractsAndPreMint(
+        address _escrow,
+        address _orderManager,
+        address _dao, //onlyRole(ADMIN_ROLE)
+        uint256 _preMintAmount
+    ) public virtual {
+        if (
+            _escrow == address(0) ||
+            _orderManager == address(0) ||
+            _dao == address(0)
+        ) {
             revert InvalidAddress(address(0));
         }
         escrow = _escrow;
         orderManager = _orderManager;
         dao = _dao;
+        if (_preMintAmount > 0) {
+            _mint(_escrow, _preMintAmount);
+        }
         emit ProjectContractsSet(_escrow, _orderManager, _dao, chainId);
     }
 
@@ -286,8 +342,8 @@ contract RyzerProject is
         cancelDelay = params.cancelDelay;
         dividendPct = params.dividendPct;
         eoiPct = params.eoiPct;
-        minInvestment = params.minInvestment * TOKEN_DECIMALS;
-        maxInvestment = params.maxInvestment * TOKEN_DECIMALS;
+        minInvestment = params.minInvestment; //* TOKEN_DECIMALS;
+        maxInvestment = params.maxInvestment; //* TOKEN_DECIMALS;
         assetType = params.assetType;
         legalMetadataCID = params.legalMetadataCID;
         metadataCID = params.metadataCID;
@@ -298,7 +354,11 @@ contract RyzerProject is
     }
 
     /// @notice Hook to enforce transfer restrictions
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual {
         if (!isActive) revert ProjectInactive();
         if (from != address(0) && block.timestamp < lockUntil[from]) {
             revert TokensLocked(from, lockUntil[from]);
@@ -346,8 +406,10 @@ contract RyzerProject is
         }
         if (params.chainId == 0) revert InvalidChainId(params.chainId);
         if (
-            params.assetType != bytes32("Commercial") && params.assetType != bytes32("Residential")
-                && params.assetType != bytes32("Holiday") && params.assetType != bytes32("Land")
+            params.assetType != bytes32("Commercial") &&
+            params.assetType != bytes32("Residential") &&
+            params.assetType != bytes32("Holiday") &&
+            params.assetType != bytes32("Land")
         ) revert InvalidAssetType(params.assetType);
     }
 
@@ -356,8 +418,13 @@ contract RyzerProject is
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Authorizes contract upgrades
-    function _authorizeUpgrade(address newImplementation) internal view virtual override onlyRole(ADMIN_ROLE) {
-        if (newImplementation == address(0) || newImplementation.code.length == 0) {
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal view virtual override onlyRole(ADMIN_ROLE) {
+        if (
+            newImplementation == address(0) ||
+            newImplementation.code.length == 0
+        ) {
             revert InvalidAddress(newImplementation);
         }
     }
@@ -377,7 +444,11 @@ contract RyzerProject is
     }
 
     /// @notice Returns investment limits
-    function getInvestmentLimits() external view returns (uint256 minInvestment_, uint256 maxInvestment_) {
+    function getInvestmentLimits()
+        external
+        view
+        returns (uint256 minInvestment_, uint256 maxInvestment_)
+    {
         return (minInvestment, maxInvestment);
     }
 
@@ -386,30 +457,40 @@ contract RyzerProject is
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Returns project details
-    function getProjectDetails() public view virtual returns (ProjectDetails memory) {
-        return ProjectDetails({
-            name: name(),
-            symbol: symbol(),
-            maxSupply: totalSupply(),
-            tokenPrice: tokenPrice,
-            cancelDelay: cancelDelay,
-            dividendPct: dividendPct,
-            minInvestment: minInvestment,
-            maxInvestment: maxInvestment,
-            assetType: assetType,
-            metadataCID: metadataCID,
-            legalMetadataCID: legalMetadataCID,
-            companyId: companyId,
-            assetId: assetId,
-            projectOwner: projectOwner,
-            factoryOwner: factoryOwner,
-            escrow: escrow,
-            orderManager: orderManager,
-            dao: dao,
-            owner: projectOwner,
-            chainId: chainId,
-            isActive: isActive,
-            eoiPct: eoiPct
-        });
+    function getProjectDetails()
+        public
+        view
+        virtual
+        returns (ProjectDetails memory)
+    {
+        return
+            ProjectDetails({
+                name: name(),
+                symbol: symbol(),
+                maxSupply: totalSupply(),
+                tokenPrice: tokenPrice,
+                cancelDelay: cancelDelay,
+                dividendPct: dividendPct,
+                minInvestment: minInvestment,
+                maxInvestment: maxInvestment,
+                assetType: assetType,
+                metadataCID: metadataCID,
+                legalMetadataCID: legalMetadataCID,
+                companyId: companyId,
+                assetId: assetId,
+                projectOwner: projectOwner,
+                factoryOwner: factoryOwner,
+                escrow: escrow,
+                orderManager: orderManager,
+                dao: dao,
+                owner: projectOwner,
+                chainId: chainId,
+                isActive: isActive,
+                eoiPct: eoiPct
+            });
+    }
+
+    function getProjectOwner() external view returns (address) {
+        return projectOwner;
     }
 }

@@ -104,7 +104,8 @@ contract RyzerRegistry is
     //////////////////////////////////////////////////////////////*/
     // Role identifiers
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    bytes32 public constant REGISTRY_ADMIN_ROLE = keccak256("REGISTRY_ADMIN_ROLE");
+    bytes32 public constant REGISTRY_ADMIN_ROLE =
+        keccak256("REGISTRY_ADMIN_ROLE");
 
     // Constants
     uint256 public constant MAX_STRING_LENGTH = 100;
@@ -130,25 +131,52 @@ contract RyzerRegistry is
     event RegistryInitialized(uint16 chainId);
     event FactoryUpdated(address factory);
     event CompanyRegistered(
-        uint256 indexed companyId, address indexed owner, string name, CompanyType companyType, string jurisdiction
+        uint256 indexed companyId,
+        address indexed owner,
+        string name,
+        CompanyType companyType,
+        string jurisdiction
     );
-    event ProjectRegistered(uint256 indexed companyId, uint256 indexed projectId, address indexed projectAddress);
-    event BatchProjectRegistered(uint256 indexed companyId, uint256[] projectIds);
-    event ProjectDeactivated(uint256 indexed companyId, uint256 indexed projectId);
-    event MetadataUpdated(uint256 indexed companyId, uint256 indexed projectId, string metadataType, string newCID);
+    event ProjectRegistered(
+        uint256 indexed companyId,
+        uint256 indexed projectId,
+        address indexed projectAddress
+    );
+    event BatchProjectRegistered(
+        uint256 indexed companyId,
+        uint256[] projectIds
+    );
+    event ProjectDeactivated(
+        uint256 indexed companyId,
+        uint256 indexed projectId
+    );
+    event MetadataUpdated(
+        uint256 indexed companyId,
+        uint256 indexed projectId,
+        string metadataType,
+        string newCID
+    );
 
     /*//////////////////////////////////////////////////////////////
                            MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlyValidCompany(uint256 companyId) {
-        if (companyId == 0 || companyId > companyCount || !companies[companyId].isActive) {
+        if (
+            companyId == 0 ||
+            companyId > companyCount ||
+            !companies[companyId].isActive
+        ) {
             revert InvalidCompanyId(companyId);
         }
         _;
     }
 
     modifier onlyValidProject(uint256 companyId, uint256 projectId) {
-        if (projectId == 0 || projectId > projectCount || projects[companyId][projectId].projectAddress == address(0)) {
+        if (
+            projectId == 0 ||
+            projectId > projectCount ||
+            projects[companyId][projectId].projectAddress == address(0)
+        ) {
             revert InvalidProjectId(projectId);
         }
         _;
@@ -214,10 +242,15 @@ contract RyzerRegistry is
     /// @param companyType Company type
     /// @param jurisdiction Company jurisdiction
     /// @return New company ID
-    function registerCompany(address owner, string calldata name, string calldata jurisdiction, CompanyType companyType)
+    function registerCompany(
+        address owner,
+        string calldata name,
+        string calldata jurisdiction,
+        CompanyType companyType
+    )
         external
         nonReentrant
-        onlyRole(REGISTRY_ADMIN_ROLE) //@ask
+        //onlyRole(REGISTRY_ADMIN_ROLE) //@ask
         whenNotPaused
         returns (uint256)
     {
@@ -225,11 +258,22 @@ contract RyzerRegistry is
         if (companyIdForAddress[owner] != 0) revert AddressAlreadyOwnsCompany();
 
         uint256 newCompanyId = ++companyCount;
-        companies[newCompanyId] =
-            Company({owner: owner, name: name, companyType: companyType, jurisdiction: jurisdiction, isActive: true});
+        companies[newCompanyId] = Company({
+            owner: owner,
+            name: name,
+            companyType: companyType,
+            jurisdiction: jurisdiction,
+            isActive: true
+        });
         companyIdForAddress[owner] = newCompanyId;
 
-        emit CompanyRegistered(newCompanyId, owner, name, companyType, jurisdiction);
+        emit CompanyRegistered(
+            newCompanyId,
+            owner,
+            name,
+            companyType,
+            jurisdiction
+        );
         return newCompanyId;
     }
 
@@ -237,10 +281,13 @@ contract RyzerRegistry is
     /// @param companyId Company ID
     /// @param params Project parameters
     /// @return New project ID
-    function registerProject(uint256 companyId, ProjectParams calldata params)
+    function registerProject(
+        uint256 companyId,
+        ProjectParams calldata params
+    )
         external
         nonReentrant
-        onlyRole(REGISTRY_ADMIN_ROLE)
+        //onlyRole(REGISTRY_ADMIN_ROLE)
         onlyValidCompany(companyId)
         whenNotPaused
         returns (uint256)
@@ -256,7 +303,11 @@ contract RyzerRegistry is
     /// @param companyId Company ID
     /// @param projectId Project ID
     /// @param newCID New metadata CID
-    function updateMetadataCID(uint256 companyId, uint256 projectId, string calldata newCID)
+    function updateMetadataCID(
+        uint256 companyId,
+        uint256 projectId,
+        string calldata newCID
+    )
         external
         onlyRole(REGISTRY_ADMIN_ROLE)
         onlyValidCompany(companyId)
@@ -272,7 +323,11 @@ contract RyzerRegistry is
     /// @param companyId Company ID
     /// @param projectId Project ID
     /// @param newCID New legal metadata CID
-    function updateLegalMetadataCID(uint256 companyId, uint256 projectId, string calldata newCID)
+    function updateLegalMetadataCID(
+        uint256 companyId,
+        uint256 projectId,
+        string calldata newCID
+    )
         external
         onlyRole(REGISTRY_ADMIN_ROLE)
         onlyValidCompany(companyId)
@@ -289,7 +344,10 @@ contract RyzerRegistry is
     /// @notice Deactivates a project
     /// @param companyId Company ID
     /// @param projectId Project ID
-    function deactivateProject(uint256 companyId, uint256 projectId)
+    function deactivateProject(
+        uint256 companyId,
+        uint256 projectId
+    )
         external
         onlyRole(REGISTRY_ADMIN_ROLE)
         onlyValidCompany(companyId)
@@ -318,7 +376,10 @@ contract RyzerRegistry is
     /// @param companyId Company ID
     /// @param params Project parameters
     /// @return New project ID
-    function _createProject(uint256 companyId, ProjectParams calldata params) private returns (uint256) {
+    function _createProject(
+        uint256 companyId,
+        ProjectParams calldata params
+    ) private returns (uint256) {
         uint256 newProjectId = ++projectCount;
         projects[companyId][newProjectId] = Project({
             projectAddress: params.projectAddress,
@@ -342,8 +403,13 @@ contract RyzerRegistry is
 
     /// @notice Authorizes contract upgrades
     /// @param newImplementation New implementation address
-    function _authorizeUpgrade(address newImplementation) internal view override onlyRole(ADMIN_ROLE) {
-        if (newImplementation == address(0) || newImplementation.code.length == 0) {
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal view override onlyRole(ADMIN_ROLE) {
+        if (
+            newImplementation == address(0) ||
+            newImplementation.code.length == 0
+        ) {
             revert InvalidAddress(newImplementation);
         }
     }
@@ -356,12 +422,19 @@ contract RyzerRegistry is
     /// @param owner Company owner
     /// @param name Company name
     /// @param jurisdiction Company jurisdiction
-    function _validateCompanyInput(address owner, string memory name, string memory jurisdiction) private pure {
+    function _validateCompanyInput(
+        address owner,
+        string memory name,
+        string memory jurisdiction
+    ) private pure {
         if (owner == address(0)) revert InvalidAddress(owner);
         if (bytes(name).length == 0 || bytes(name).length > MAX_STRING_LENGTH) {
             revert InvalidParameter("name");
         }
-        if (bytes(jurisdiction).length == 0 || bytes(jurisdiction).length > MAX_STRING_LENGTH) {
+        if (
+            bytes(jurisdiction).length == 0 ||
+            bytes(jurisdiction).length > MAX_STRING_LENGTH
+        ) {
             revert InvalidParameter("jurisdiction");
         }
     }
@@ -369,10 +442,16 @@ contract RyzerRegistry is
     /// @notice Validates project input parameters
     /// @param params Project parameters
     function _validateProjectInput(ProjectParams calldata params) private pure {
-        if (bytes(params.name).length == 0 || bytes(params.name).length > MAX_STRING_LENGTH) {
+        if (
+            bytes(params.name).length == 0 ||
+            bytes(params.name).length > MAX_STRING_LENGTH
+        ) {
             revert InvalidParameter("name");
         }
-        if (bytes(params.symbol).length == 0 || bytes(params.symbol).length > MAX_SYMBOL_LENGTH) {
+        if (
+            bytes(params.symbol).length == 0 ||
+            bytes(params.symbol).length > MAX_SYMBOL_LENGTH
+        ) {
             revert InvalidParameter("symbol");
         }
         if (bytes(params.metadataCID).length == 0) {
@@ -384,7 +463,11 @@ contract RyzerRegistry is
         if (params.projectAddress == address(0)) {
             revert InvalidAddress(params.projectAddress);
         }
-        if (params.escrow == address(0) || params.orderManager == address(0) || params.dao == address(0)) {
+        if (
+            params.escrow == address(0) ||
+            params.orderManager == address(0) ||
+            params.dao == address(0)
+        ) {
             revert InvalidAddress(address(0));
         }
     }
@@ -401,7 +484,9 @@ contract RyzerRegistry is
     /// @return jurisdiction Company jurisdiction
     /// @return isActive Active status
     /// @return projectIds Project IDs
-    function getCompanyDetails(uint256 companyId)
+    function getCompanyDetails(
+        uint256 companyId
+    )
         external
         view
         onlyValidCompany(companyId)
@@ -429,7 +514,10 @@ contract RyzerRegistry is
     /// @param companyId Company ID
     /// @param projectId Project ID
     /// @return Project details
-    function getProjectDetails(uint256 companyId, uint256 projectId)
+    function getProjectDetails(
+        uint256 companyId,
+        uint256 projectId
+    )
         external
         view
         onlyValidCompany(companyId)
@@ -437,18 +525,19 @@ contract RyzerRegistry is
         returns (ProjectDetails memory)
     {
         Project storage project = projects[companyId][projectId];
-        return ProjectDetails({
-            projectAddress: project.projectAddress,
-            escrow: project.escrow,
-            orderManager: project.orderManager,
-            dao: project.dao,
-            name: project.name,
-            symbol: project.symbol,
-            metadataCID: project.metadataCID,
-            assetType: project.assetType,
-            legalMetadataCID: project.legalMetadataCID,
-            isActive: project.isActive
-        });
+        return
+            ProjectDetails({
+                projectAddress: project.projectAddress,
+                escrow: project.escrow,
+                orderManager: project.orderManager,
+                dao: project.dao,
+                name: project.name,
+                symbol: project.symbol,
+                metadataCID: project.metadataCID,
+                assetType: project.assetType,
+                legalMetadataCID: project.legalMetadataCID,
+                isActive: project.isActive
+            });
     }
 
     /// @notice Gets batch project details
@@ -456,7 +545,11 @@ contract RyzerRegistry is
     /// @param startIndex Start index
     /// @param count Number of projects
     /// @return Batch project response
-    function getBatchProjects(uint256 companyId, uint256 startIndex, uint256 count)
+    function getBatchProjects(
+        uint256 companyId,
+        uint256 startIndex,
+        uint256 count
+    )
         external
         view
         onlyValidCompany(companyId)
@@ -467,7 +560,9 @@ contract RyzerRegistry is
         uint256 length = count;
 
         if (startIndex + count > projIds.length) {
-            length = projIds.length > startIndex ? projIds.length - startIndex : 0;
+            length = projIds.length > startIndex
+                ? projIds.length - startIndex
+                : 0;
         }
 
         uint256[] memory ids = new uint256[](length);

@@ -1,0 +1,51 @@
+// 1. Deposit function defined wallet core
+
+// encodeFunction("deposit",());
+
+// executeCallData // execute fn --> {
+    walletAddr,
+    0,
+    depositCallData
+}
+
+// userOp -> {
+    address sender;
+    uint256 nonce;
+    bytes initCode;
+    bytes callData;
+    bytes32 accountGasLimits;
+    uint256 preVerificationGas;
+    bytes32 gasFees;
+    bytes paymasterAndData;
+    bytes signature;
+};
+
+// enteryPront.getUserOpHash(userOp)
+
+// conversion 
+
+Remix Params
+["Google","USA",1] // register company done
+
+Create Project
+Company Id = 1
+["Gemini",
+  "0x436f6d6d65726369616c0000000000000000000000000000000000000000000000",
+  51,
+  "10000000000000000000",
+  "80000000000000000000",
+  "100000000000000000000",
+  "0x3100000000000000000000000000000000000000000000000000000000000000",
+  3,
+  "100000000000000000000",
+  86400,
+  10,
+  10,
+  "100000000000000000000",
+  "0x3100000000000000000000000000000000000000000000000000000000000000",
+  "0x3100000000000000000000000000000000000000000000000000000000000000",
+  "0x3c5a809e712D30D932b71EdB066FA2EEDEE6Ad58",
+  "0x50e61c1b9FD2757F233872FdDb039C073C525107"
+]
+
+

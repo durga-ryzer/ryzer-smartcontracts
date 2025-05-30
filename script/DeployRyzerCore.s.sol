@@ -28,7 +28,11 @@ contract DeployRyzerCore is Script {
     {
         HelperConfig _helperConfig = new HelperConfig();
 
-        (address usdt, address deployer) = _helperConfig.activeNetworkConfig();
+        (address usdt, address ryzerToken, address deployer) = _helperConfig
+            .activeNetworkConfig();
+        // address usdt = 0x8EBe3F72cBbc78bF0802180a72D73cCE82f821c2;
+        // address ryzerToken = 0xDF40382D86Fc26ac8938Cd23f7d4ba58BC32c608;
+        // address deployer = 0x3c5a809e712D30D932b71EdB066FA2EEDEE6Ad58;
 
         vm.startBroadcast(deployer);
 
@@ -46,10 +50,16 @@ contract DeployRyzerCore is Script {
         RyzerDAO _daoTemplate = new RyzerDAO();
 
         // 2. Encode the call to initialize()
-        bytes memory initDataForRegistry = abi.encodeWithSelector(registryImpl.initialize.selector, block.chainid);
+        bytes memory initDataForRegistry = abi.encodeWithSelector(
+            registryImpl.initialize.selector,
+            block.chainid
+        );
 
         // 3. Deploy ERC1967Proxy (UUPS-compatible)
-        ERC1967Proxy registryProxy = new ERC1967Proxy(address(registryImpl), initDataForRegistry);
+        ERC1967Proxy registryProxy = new ERC1967Proxy(
+            address(registryImpl),
+            initDataForRegistry
+        );
 
         bytes memory initDataForFactory = abi.encodeWithSelector(
             factoryImpl.initialize.selector,
@@ -61,7 +71,10 @@ contract DeployRyzerCore is Script {
             _daoTemplate
         );
 
-        ERC1967Proxy factoryProxy = new ERC1967Proxy(address(factoryImpl), initDataForFactory);
+        ERC1967Proxy factoryProxy = new ERC1967Proxy(
+            address(factoryImpl),
+            initDataForFactory
+        );
 
         vm.stopBroadcast();
 

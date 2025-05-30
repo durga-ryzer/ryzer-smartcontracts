@@ -8,6 +8,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./interfaces/IRyzerEscrow.sol";
 import "./interfaces/IRyzerProject.sol";
@@ -82,6 +83,7 @@ contract RyzerOrderManager is
     struct PlaceOrderParams {
         address _user;
         address _projectAddress;
+        address _escrowAddress;
         bytes32 _assetId;
         uint256 _amount;
         uint256 _currencyPrice; // Price of 1 currency token in 18 decimals
@@ -129,17 +131,63 @@ contract RyzerOrderManager is
     /*//////////////////////////////////////////////////////////////
                          EVENTS
     //////////////////////////////////////////////////////////////*/
-    event Initialized(address usdtToken, address escrow, address project, uint16 chainId);
-    event OrderPlaced(bytes32 indexed orderId, address indexed buyer, uint256 amount, bytes32 assetId, uint16 chainId);
-    event DocumentsSigned(bytes32 indexed orderId, address indexed buyer, uint16 chainId);
-    event OrderFinalized(bytes32 indexed orderId, address indexed buyer, uint256 amount, uint16 chainId);
-    event OrderCancelled(bytes32 indexed orderId, address indexed buyer, uint256 amount, uint16 chainId);
-    event FundsReleaseSigned(bytes32 indexed orderId, address indexed signer, uint16 chainId);
-    event FundsReleased(bytes32 indexed orderId, address indexed to, uint256 amount, uint16 chainId);
-    event StuckOrderResolved(bytes32 indexed orderId, address indexed buyer, uint256 amount, uint16 chainId);
-    event EmergencyWithdrawal(address indexed recipient, uint256 amount, uint16 chainId);
+    event Initialized(
+        address usdtToken,
+        address escrow,
+        address project,
+        uint16 chainId
+    );
+    event OrderPlaced(
+        bytes32 indexed orderId,
+        address indexed buyer,
+        uint256 amount,
+        bytes32 assetId,
+        uint16 chainId
+    );
+    event DocumentsSigned(
+        bytes32 indexed orderId,
+        address indexed buyer,
+        uint16 chainId
+    );
+    event OrderFinalized(
+        bytes32 indexed orderId,
+        address indexed buyer,
+        uint256 amount,
+        uint16 chainId
+    );
+    event OrderCancelled(
+        bytes32 indexed orderId,
+        address indexed buyer,
+        uint256 amount,
+        uint16 chainId
+    );
+    event FundsReleaseSigned(
+        bytes32 indexed orderId,
+        address indexed signer,
+        uint16 chainId
+    );
+    event FundsReleased(
+        bytes32 indexed orderId,
+        address indexed to,
+        uint256 amount,
+        uint16 chainId
+    );
+    event StuckOrderResolved(
+        bytes32 indexed orderId,
+        address indexed buyer,
+        uint256 amount,
+        uint16 chainId
+    );
+    event EmergencyWithdrawal(
+        address indexed recipient,
+        uint256 amount,
+        uint16 chainId
+    );
     event ProjectContractsSet(
-        address indexed usdtToken, address indexed escrow, address indexed project, uint16 chainId
+        address indexed usdtToken,
+        address indexed escrow,
+        address indexed project,
+        uint16 chainId
     );
 
     /*//////////////////////////////////////////////////////////////
@@ -151,8 +199,18 @@ contract RyzerOrderManager is
     /// @param _escrow Escrow contract address
     /// @param _project Project contract address
     /// @param _chainId Network chain ID
-    function initialize(address _usdtToken, address _escrow, address _project, uint16 _chainId) external initializer {
-        if (_usdtToken == address(0) || _escrow == address(0) || _project == address(0)) {
+    function initialize(
+        address _usdtToken,
+        address _escrow,
+        address _project,
+        uint16 _chainId,
+        address _owner
+    ) external initializer {
+        if (
+            _usdtToken == address(0) ||
+            _escrow == address(0) ||
+            _project == address(0)
+        ) {
             revert InvalidAddress(address(0));
         }
         if (_project.code.length == 0) revert InvalidProject();
@@ -171,10 +229,8 @@ contract RyzerOrderManager is
         usdtToken = IERC20(_usdtToken);
         escrow = _escrow;
         project = _project;
-        requiredSignatures = MIN_SIGNATURES;
-
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+        _grantRole(ADMIN_ROLE, _owner);
 
         emit Initialized(_usdtToken, _escrow, _project, _chainId);
     }
@@ -183,8 +239,16 @@ contract RyzerOrderManager is
     /// @param _usdtToken New USDT token address
     /// @param _escrow New escrow contract address
     /// @param _project New project contract address
-    function setProjectContracts(address _usdtToken, address _escrow, address _project) external onlyRole(ADMIN_ROLE) {
-        if (_usdtToken == address(0) || _escrow == address(0) || _project == address(0)) {
+    function setProjectContracts(
+        address _usdtToken,
+        address _escrow,
+        address _project //onlyRole(DEFAULT_ADMIN_ROLE)
+    ) external {
+        if (
+            _usdtToken == address(0) ||
+            _escrow == address(0) ||
+            _project == address(0)
+        ) {
             revert InvalidAddress(address(0));
         }
         if (_project.code.length == 0) revert InvalidProject();
@@ -195,50 +259,73 @@ contract RyzerOrderManager is
         usdtToken = IERC20(_usdtToken);
         escrow = _escrow;
         project = _project;
-        emit ProjectContractsSet(_usdtToken, _escrow, _project, uint16(block.chainid));
+        emit ProjectContractsSet(
+            _usdtToken,
+            _escrow,
+            _project,
+            uint16(block.chainid)
+        );
     }
 
     /// @notice Places a new order
-    function placeOrder(PlaceOrderParams calldata params) external nonReentrant whenNotPaused {
+    function placeOrder(
+        PlaceOrderParams calldata params
+    ) external nonReentrant whenNotPaused returns (bytes32) {
         require(
-            params._paymentType == PaymentType.FULL || params._paymentType == PaymentType.EOI,
+            params._paymentType == PaymentType.FULL ||
+                params._paymentType == PaymentType.EOI,
             InvalidParameter("invalid payment type")
         );
 
         require(
-            params._currency == Currency.USDT || params._currency == Currency.XDC || params._currency == Currency.XRP
-                || params._currency == Currency.RYZER,
+            params._currency == Currency.USDT ||
+                params._currency == Currency.XDC ||
+                params._currency == Currency.XRP ||
+                params._currency == Currency.RYZER,
             InvalidParameter("invalid currency")
         );
 
         uint16 chainId = uint16(block.chainid);
         _validateOrderInput(
-            params._amount, params._projectAddress, params._currencyPrice, params._assetId, params._fees
+            params._amount,
+            params._projectAddress,
+            params._currencyPrice,
+            params._assetId,
+            params._fees
         );
 
-        uint256 assetPrice = IRyzerProject(project).tokenPrice(); // assumed in 18 decimals
-        uint256 totalOrderValueWithoutFees = params._amount * assetPrice; // still 18 decimals
+        uint256 assetPrice = IRyzerProject(params._projectAddress).tokenPrice(); // assumed in 18 decimals
+        uint256 totalOrderValueWithoutFees = params._amount * assetPrice; // 1e36
 
         // total price user has to pay in currency tokens (e.g., USDT)
-        uint256 totalOrderValueInCurrency = (totalOrderValueWithoutFees) / params._currencyPrice; // assuming currency price and asset price in 18 decimals // n
+        uint256 totalOrderValueInCurrency = (totalOrderValueWithoutFees) /
+            (params._currencyPrice * 1e12); // 1e12 = 1e18 / 1e6 // depend upon currency type
 
         uint256 bookingEoiPayment = 0;
-        uint256 totalOrderValue = totalOrderValueInCurrency + params._fees;
+        uint256 totalOrderValue = totalOrderValueInCurrency +
+            (params._fees * 1e12); // to adjust if fee in usdt
 
         uint256 payment = totalOrderValue;
 
         if (params._paymentType == PaymentType.EOI) {
-            uint256 eoiPct = IRyzerProject(project).eoiPct(); // e.g., 20 means 20%
+            uint256 eoiPct = IRyzerProject(params._projectAddress).eoiPct();
             bookingEoiPayment = (totalOrderValueInCurrency * eoiPct) / 100;
-            bookingEoiPayment = bookingEoiPayment + params._fees;
+            bookingEoiPayment = bookingEoiPayment + (params._fees * 1e12);
             payment = bookingEoiPayment;
         }
 
         // Balance & Allowance checks
-        _checkAllowanceAndBalance(params._user, payment);
+        //_checkAllowanceAndBalance(params._user, payment);
 
-        bytes32 orderId =
-            keccak256(abi.encode(params._user, params._projectAddress, block.chainid, params._assetId, orderNonce));
+        bytes32 orderId = keccak256(
+            abi.encode(
+                params._user,
+                params._projectAddress,
+                block.chainid,
+                params._assetId,
+                orderNonce
+            )
+        );
         orderNonce++;
 
         orders[orderId] = Order({
@@ -258,64 +345,35 @@ contract RyzerOrderManager is
             hasFullPayment: params._paymentType == PaymentType.FULL
         });
 
-        usdtToken.safeTransferFrom(params._user, escrow, payment);
-
-        try IRyzerEscrow(escrow).deposit(orderId, params._user, payment, params._assetId) {
-            emit OrderPlaced(orderId, params._user, params._amount, params._assetId, chainId);
+        try
+            IRyzerEscrow(params._escrowAddress).deposit(
+                orderId,
+                params._user,
+                payment,
+                uint256(params._paymentType),
+                params._assetId
+            )
+        {
+            emit OrderPlaced(
+                orderId,
+                params._user,
+                params._amount,
+                params._assetId,
+                chainId
+            );
         } catch Error(string memory reason) {
             revert OrderDepositFailed(reason);
         } catch {
             revert OrderDepositFailed("error occurred during escrow deposit");
         }
+        return orderId;
     }
-
-    /// @notice Places a new order
-    /// @param amount Token amount to purchase
-    /// @param projectAddress Project address
-    /// @param chainId_ Chain ID
-    /// @param assetId Asset ID
-    /// @param fees Order fees
-    // function placeOrder(uint256 amount, address projectAddress, uint16 chainId_, bytes32 assetId, uint256 fees)
-    //     external
-    //     nonReentrant
-    //     whenNotPaused
-    // {
-    //     _validateOrderInput(amount, projectAddress, chainId_, assetId, fees);
-
-    //     uint256 tokenPrice = IRyzerProject(project).tokenPrice();
-    //     uint256 totalPrice = (amount * tokenPrice) / 10 ** 18;
-    //     uint256 initialPayment = (totalPrice * IRyzerProject(project).eoiPct()) / 100;
-    //     uint256 totalRequired = initialPayment + fees;
-    //     if (
-    //         usdtToken.balanceOf(msg.sender) < totalRequired
-    //             || usdtToken.allowance(msg.sender, address(this)) < totalRequired
-    //     ) {
-    //         revert InsufficientBalance(usdtToken.balanceOf(msg.sender), totalRequired);
-    //     }
-
-    //     bytes32 orderId = keccak256(abi.encode(msg.sender, projectAddress, chainId_, assetId, orderNonce++));
-    //     orders[orderId] = Order({
-    //         buyer: msg.sender,
-    //         amount: amount,
-    //         initialPayment: initialPayment,
-    //         fees: fees,
-    //         assetId: assetId,
-    //         chainId: chainId_,
-    //         timestamp: uint48(block.timestamp),
-    //         orderExpiration: uint48(block.timestamp + ORDER_EXPIRATION),
-    //         releaseTimelock: 0,
-    //         status: OrderStatus.Pending,
-    //         released: false
-    //     });
-
-    //     usdtToken.safeTransferFrom(msg.sender, escrow, totalRequired);
-    //     IRyzerEscrow(escrow).deposit(orderId, msg.sender, totalRequired, assetId);
-    //     emit OrderPlaced(orderId, msg.sender, amount, assetId, chainId_);
-    // }
 
     /// @notice Marks order documents as signed
     /// @param orderId Order ID
-    function signDocuments(bytes32 orderId) external nonReentrant whenNotPaused {
+    function signDocuments(
+        bytes32 orderId
+    ) external nonReentrant whenNotPaused {
         Order storage order = orders[orderId];
         if (order.buyer == address(0)) revert OrderNotFound(orderId);
         if (order.buyer != msg.sender) revert Unauthorized();
@@ -330,16 +388,21 @@ contract RyzerOrderManager is
 
     /// @notice Finalizes an order
     /// @param orderId Order ID
-    function finalizeOrder(address _user, bytes32 orderId) external nonReentrant whenNotPaused {
+    function finalizeOrder(
+        address _user,
+        address projectAddress,
+        address escrowAddress,
+        bytes32 orderId
+    ) external nonReentrant whenNotPaused {
         Order storage order = orders[orderId];
 
         if (order.buyer == address(0)) revert OrderNotFound(orderId);
         if (order.buyer != _user && !hasRole(ADMIN_ROLE, _user)) {
             revert Unauthorized();
         }
-        if (order.status != OrderStatus.DocumentsSigned) {
-            revert DocumentsNotSigned();
-        }
+        // if (order.status != OrderStatus.DocumentsSigned) {
+        //     revert DocumentsNotSigned();
+        // }
         if (block.timestamp > order.orderExpiration) {
             revert OrderExpired(order.orderExpiration);
         }
@@ -349,23 +412,25 @@ contract RyzerOrderManager is
 
         // Skip payment step if already paid in full
         if (!order.hasFullPayment) {
-            uint256 remainingPayment = order.totalOrderValue - order.bookingEoiPayment;
-            if (remainingPayment > 0) {
-                uint256 balance = usdtToken.balanceOf(_user);
-                uint256 allowance = usdtToken.allowance(_user, address(this));
-                if (balance < remainingPayment || allowance < remainingPayment) {
-                    revert InsufficientBalance(balance, remainingPayment);
-                }
+            uint256 remainingPayment = order.totalOrderValue -
+                order.bookingEoiPayment;
 
-                usdtToken.safeTransferFrom(_user, escrow, remainingPayment);
-                IRyzerEscrow(escrow).deposit(orderId, _user, remainingPayment, order.assetId);
+            if (remainingPayment > 0) {
+                IRyzerEscrow(escrowAddress).deposit(
+                    orderId,
+                    _user,
+                    remainingPayment,
+                    uint256(PaymentType.FULL),
+                    order.assetId
+                );
             }
         }
 
-        uint256 dividend = (order.totalOrderValue * IRyzerProject(project).dividendPct()) / 100;
-        IRyzerEscrow(escrow).depositDividend(dividend);
+        // uint256 dividend = (order.totalOrderValue *
+        //     IRyzerProject(projectAddress).dividendPct()) / 100;
+        // IRyzerEscrow(escrowAddress).depositDividend(order.buyer, dividend);
 
-        IRyzerProject(project).mint(order.buyer, order.amount);
+        //IRyzerProject(project).mint(order.buyer, order.amount);
 
         order.status = OrderStatus.Finalized;
         order.releaseTimelock = uint48(block.timestamp + RELEASE_TIMELOCK);
@@ -381,11 +446,19 @@ contract RyzerOrderManager is
         if (order.buyer != msg.sender && !hasRole(ADMIN_ROLE, msg.sender)) {
             revert Unauthorized();
         }
-        if (order.status != OrderStatus.Pending && order.status != OrderStatus.DocumentsSigned) {
+        if (
+            order.status != OrderStatus.Pending &&
+            order.status != OrderStatus.DocumentsSigned
+        ) {
             revert OrderNotPending();
         }
-        if (block.timestamp < order.timestamp + CANCELLATION_DELAY && !hasRole(ADMIN_ROLE, msg.sender)) {
-            revert CancellationDelayNotMet(uint48(order.timestamp + CANCELLATION_DELAY));
+        if (
+            block.timestamp < order.timestamp + CANCELLATION_DELAY &&
+            !hasRole(ADMIN_ROLE, msg.sender)
+        ) {
+            revert CancellationDelayNotMet(
+                uint48(order.timestamp + CANCELLATION_DELAY)
+            );
         }
 
         order.status = OrderStatus.Cancelled;
@@ -401,7 +474,9 @@ contract RyzerOrderManager is
 
     /// @notice Signs a fund release request
     /// @param orderId Order ID
-    function signFundRelease(bytes32 orderId) external nonReentrant onlyRole(ADMIN_ROLE) whenNotPaused {
+    function signFundRelease(
+        bytes32 orderId
+    ) external nonReentrant onlyRole(ADMIN_ROLE) whenNotPaused {
         Order storage order = orders[orderId];
         if (order.buyer == address(0)) revert OrderNotFound(orderId);
         if (order.status != OrderStatus.Finalized) revert OrderNotPending();
@@ -430,8 +505,17 @@ contract RyzerOrderManager is
                 netAmount = order.bookingEoiPayment;
             }
             if (netAmount > 0) {
-                IRyzerEscrow(escrow).signRelease(orderId, projectOwner, netAmount);
-                emit FundsReleased(orderId, projectOwner, netAmount, order.chainId);
+                IRyzerEscrow(escrow).signRelease(
+                    orderId,
+                    projectOwner,
+                    netAmount
+                );
+                emit FundsReleased(
+                    orderId,
+                    projectOwner,
+                    netAmount,
+                    order.chainId
+                );
             }
             order.released = true;
         }
@@ -439,10 +523,15 @@ contract RyzerOrderManager is
 
     /// @notice Resolves a stuck order
     /// @param orderId Order ID
-    function resolveStuckOrder(bytes32 orderId) external nonReentrant onlyRole(ADMIN_ROLE) whenNotPaused {
+    function resolveStuckOrder(
+        bytes32 orderId
+    ) external nonReentrant onlyRole(ADMIN_ROLE) whenNotPaused {
         Order storage order = orders[orderId];
         if (order.buyer == address(0)) revert OrderNotFound(orderId);
-        if (order.status != OrderStatus.Pending && order.status != OrderStatus.DocumentsSigned) {
+        if (
+            order.status != OrderStatus.Pending &&
+            order.status != OrderStatus.DocumentsSigned
+        ) {
             revert OrderNotPending();
         }
         if (block.timestamp <= order.orderExpiration) revert OrderNotStuck();
@@ -455,13 +544,21 @@ contract RyzerOrderManager is
             cancelAmount = order.bookingEoiPayment;
         }
         IRyzerEscrow(escrow).signRelease(orderId, order.buyer, cancelAmount);
-        emit StuckOrderResolved(orderId, order.buyer, cancelAmount, order.chainId);
+        emit StuckOrderResolved(
+            orderId,
+            order.buyer,
+            cancelAmount,
+            order.chainId
+        );
     }
 
     /// @notice Withdraws stuck USDT funds in emergency scenarios
     /// @param recipient Address to receive the funds
     /// @param amount Amount of USDT to withdraw
-    function emergencyWithdraw(address recipient, uint256 amount) external onlyRole(ADMIN_ROLE) nonReentrant {
+    function emergencyWithdraw(
+        address recipient,
+        uint256 amount
+    ) external onlyRole(ADMIN_ROLE) nonReentrant {
         if (recipient == address(0)) revert InvalidAddress(recipient);
         if (amount == 0) revert InvalidAmount("zero amount");
         uint256 balance = usdtToken.balanceOf(address(this));
@@ -487,17 +584,14 @@ contract RyzerOrderManager is
 
     /// @notice Authorizes contract upgrades
     /// @param newImplementation New implementation address
-    function _authorizeUpgrade(address newImplementation) internal view override onlyRole(ADMIN_ROLE) {
-        if (newImplementation == address(0) || newImplementation.code.length == 0) {
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal view override onlyRole(ADMIN_ROLE) {
+        if (
+            newImplementation == address(0) ||
+            newImplementation.code.length == 0
+        ) {
             revert InvalidAddress(newImplementation);
-        }
-    }
-
-    function _checkAllowanceAndBalance(address user, uint256 required) internal view {
-        uint256 balance = usdtToken.balanceOf(user);
-        uint256 allowance = usdtToken.allowance(user, address(this));
-        if (balance < required || allowance < required) {
-            revert InsufficientBalance(balance, required);
         }
     }
 
@@ -513,30 +607,32 @@ contract RyzerOrderManager is
     function _validateOrderInput(
         uint256 amount,
         address projectAddress,
-        uint256 tokenPrice,
+        uint256 currencyPrice,
         bytes32 assetId,
         uint256 fees
     ) private view {
-        if (projectAddress != project || projectAddress.code.length == 0) {
-            revert InvalidProject();
-        }
+        // if (projectAddress != project || projectAddress.code.length == 0) {
+        //     revert InvalidProject();
+        // }
         //if (chainId_ != uint16(block.chainid)) revert InvalidChainId(chainId_);
         if (assetId == bytes32(0)) revert InvalidParameter("assetId");
-        if (!IRyzerProject(project).getIsActive()) {
+        if (!IRyzerProject(projectAddress).getIsActive()) {
             revert InvalidParameter("inactive project");
         }
-        if (tokenPrice <= 0) {
-            revert InvalidParameter("invalid token price");
+        if (currencyPrice <= 0) {
+            revert InvalidParameter("invalid currency price");
         }
-        (uint256 minInvestment, uint256 maxInvestment) = IRyzerProject(project).getInvestmentLimits();
+        (uint256 minInvestment, uint256 maxInvestment) = IRyzerProject(
+            projectAddress
+        ).getInvestmentLimits();
         if (amount < minInvestment) {
             revert InvalidAmount("below minimum investment");
         }
         if (amount > maxInvestment || amount > MAX_ORDER_SIZE) {
             revert InvalidAmount("exceeds maximum investment");
         }
-        //uint256 tokenPrice = IRyzerProject(project).tokenPrice();
-        uint256 totalPrice = (amount * tokenPrice) / 1e18;
+        uint256 tokenPrice = IRyzerProject(projectAddress).tokenPrice();
+        uint256 totalPrice = (amount * tokenPrice);
         if (fees > totalPrice / 2) revert InvalidAmount("excessive fees");
     }
 
@@ -547,7 +643,9 @@ contract RyzerOrderManager is
     /// @notice Retrieves order details
     /// @param orderId Order ID
     /// @return Order details
-    function getOrderDetails(bytes32 orderId) external view returns (Order memory) {
+    function getOrderDetails(
+        bytes32 orderId
+    ) external view returns (Order memory) {
         Order storage order = orders[orderId];
         if (order.buyer == address(0)) revert OrderNotFound(orderId);
         return order;
