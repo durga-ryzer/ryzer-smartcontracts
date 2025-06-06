@@ -170,6 +170,16 @@
         "internalType": "address"
       },
       {
+        "name": "projectAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "escrowAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
         "name": "orderId",
         "type": "bytes32",
         "internalType": "bytes32"
@@ -396,6 +406,11 @@
         "name": "_chainId",
         "type": "uint16",
         "internalType": "uint16"
+      },
+      {
+        "name": "_owner",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "outputs": [],
@@ -538,6 +553,11 @@
             "internalType": "address"
           },
           {
+            "name": "_escrowAddress",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
             "name": "_assetId",
             "type": "bytes32",
             "internalType": "bytes32"
@@ -570,7 +590,13 @@
         ]
       }
     ],
-    "outputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
     "stateMutability": "nonpayable"
   },
   {

@@ -202,6 +202,7 @@ contract RyzerFactory is
 
     struct ProjectParams {
         string name;
+        string symbol;
         bytes32 assetType;
         uint16 chainId;
         uint256 minInvestment;
@@ -294,7 +295,10 @@ contract RyzerFactory is
     event ProjectCreated(
         uint256 indexed companyId,
         address indexed project,
-        bytes32 indexed assetId,
+        address indexed escrow,
+        address orderManager,
+        address dao,
+        bytes32 assetId,
         string name
     );
     event TemplateUpdateProposed(
@@ -419,11 +423,7 @@ contract RyzerFactory is
     /// @notice Registers a new company
     function registerCompany(
         CompanyParams calldata params
-    ) external nonReentrant whenNotPaused {
-        if (ownerToCompany[msg.sender] != 0) {
-            revert AddressAlreadyOwnsCompany(msg.sender);
-        }
-
+    ) external nonReentrant whenNotPaused returns (uint256) {
         if (
             bytes(params.name).length < MIN_NAME_LENGTH ||
             bytes(params.name).length > MAX_NAME_LENGTH
@@ -454,6 +454,7 @@ contract RyzerFactory is
             params.jurisdiction,
             params.companyType
         );
+        return newCompanyId;
     }
 
     /// @notice Creates a new RWA project
@@ -495,7 +496,9 @@ contract RyzerFactory is
                 abi.encode(
                     IRyzerProject.ProjectInitParams({
                         name: params.name,
-                        symbol: string((abi.encodePacked("RWA-", params.name))), // fix collisions (need to be unique)
+                        symbol: string(
+                            (abi.encodePacked("RYZX-", params.symbol))
+                        ), // fix collisions (need to be unique)
                         maxSupply: params.totalSupply,
                         tokenPrice: params.tokenPrice,
                         cancelDelay: params.cancelDelay,
@@ -597,7 +600,7 @@ contract RyzerFactory is
             RyzerRegistry.ProjectParams memory projectParams = RyzerRegistry
                 .ProjectParams({
                     name: params.name,
-                    symbol: string((abi.encodePacked("RWA-", params.name))),
+                    symbol: string((abi.encodePacked("RYZX-", params.symbol))),
                     metadataCID: string(abi.encodePacked(params.metadataCID)),
                     assetType: RyzerRegistry.AssetType.Commercial,
                     legalMetadataCID: string(
@@ -622,6 +625,9 @@ contract RyzerFactory is
             emit ProjectCreated(
                 companyId,
                 contracts.project,
+                contracts.escrow,
+                contracts.orderManager,
+                contracts.dao,
                 params.assetId,
                 params.name
             );
@@ -661,12 +667,6 @@ contract RyzerFactory is
         ) {
             revert InvalidNameLength();
         }
-        if (
-            params.assetType != bytes32("Commercial") &&
-            params.assetType != bytes32("Residential") &&
-            params.assetType != bytes32("Holiday") &&
-            params.assetType != bytes32("Land")
-        ) revert InvalidAssetType();
         if (
             params.minInvestment == 0 ||
             params.maxInvestment < params.minInvestment ||

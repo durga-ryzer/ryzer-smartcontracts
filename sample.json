@@ -1,0 +1,10 @@
+{
+    "RyzerProject": "0x702Ca069a1a542060644993c3d364943aC2f4a15",
+    "RyzerEscrow": "0x7af99a78Ed822070471ebe0B579077e8a048c102",
+    "RyzerOrderManger": "0xdbd2b75e72b3ebecdaa1e4b5ec82ec2fa0e7f7cd",
+    "RyzerDAO": "0x75ea086E9690465fF169c2941820A26f135C6dd6",
+    "RyzerRegistry": "0x25c70bC5e38A92C71404011AD91009221Dbc6818",
+    "RegistryProxy" : "0x4e19ac8CF9C72666ea2A3476EEBf08dE45d9938E",
+    "RyzerFactory" : "0x1f0B1fc67B2a49CF8419123396331d046f1d4641",
+    "FactoryProxy" : "0xb02A2a61eCd641132a0d99b2E76d7E37268573FB"
+}

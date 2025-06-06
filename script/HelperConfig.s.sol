@@ -11,6 +11,7 @@ contract HelperConfig is Script {
 
     uint256 public constant XDC_MAINNET_NETWORK = 50;
     uint256 public constant XDC_APOTHEM_NETWORK = 51;
+    uint256 public constant XRPL_EVM_NETWORK = 1449000;
 
     address public FOUNDRY_DEFAULT_DEPLOYER = makeAddr("deployer");
 
@@ -25,6 +26,8 @@ contract HelperConfig is Script {
             activeNetworkConfig = getXdcMainnetConfig();
         } else if (block.chainid == XDC_APOTHEM_NETWORK) {
             activeNetworkConfig = getXdcApothemConfig();
+        } else if (block.chainid == XRPL_EVM_NETWORK) {
+            activeNetworkConfig = getXrplEvmConfig();
         } else {
             activeNetworkConfig = getOrCreateAnvilConfig();
         }
@@ -36,8 +39,8 @@ contract HelperConfig is Script {
         returns (NetworkConfig memory xdcMainnetNetworkConfig)
     {
         xdcMainnetNetworkConfig = NetworkConfig({
-            usdt: 0x8EBe3F72cBbc78bF0802180a72D73cCE82f821c2, // need to check
-            ryzerToken: address(1),
+            usdt: 0xD4B5f10D61916Bd6E0860144a91Ac658dE8a1437,
+            ryzerToken: 0x9b75fF79Bdd37E75374BDF78092138eD39A01745,
             deployer: 0x3c5a809e712D30D932b71EdB066FA2EEDEE6Ad58
         });
     }
@@ -50,6 +53,18 @@ contract HelperConfig is Script {
         xdcApothemNetworkConfig = NetworkConfig({
             usdt: 0x8EBe3F72cBbc78bF0802180a72D73cCE82f821c2,
             ryzerToken: 0xDF40382D86Fc26ac8938Cd23f7d4ba58BC32c608,
+            deployer: 0x3c5a809e712D30D932b71EdB066FA2EEDEE6Ad58
+        });
+    }
+
+    function getXrplEvmConfig()
+        public
+        pure
+        returns (NetworkConfig memory xrplEvmConfig)
+    {
+        xrplEvmConfig = NetworkConfig({
+            usdt: 0x8c99B4e51eA9Aa3df5F44FAeF0061f7Ad9Ef5102,
+            ryzerToken: 0x784E7DeBd0690697B69688B6daA684611b6B8079,
             deployer: 0x3c5a809e712D30D932b71EdB066FA2EEDEE6Ad58
         });
     }

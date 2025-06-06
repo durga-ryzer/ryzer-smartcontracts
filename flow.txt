@@ -8,19 +8,28 @@
     depositCallData
 }
 
+// enCodeDate(func)
+
+this.signer = 
+
 // userOp -> {
-    address sender;
-    uint256 nonce;
-    bytes initCode;
-    bytes callData;
-    bytes32 accountGasLimits;
-    uint256 preVerificationGas;
-    bytes32 gasFees;
-    bytes paymasterAndData;
-    bytes signature;
+    address sender: walletAddres
+    uint256 nonce: provider.getN
+    bytes initCode: "0x",
+    bytes callData: "0x...."
+    bytes32 accountGasLimits: 0x123 // 
+    uint256 preVerificationGas;//
+    bytes32 gasFees;//
+    bytes paymasterAndData;// payemastrr contact 
+    bytes signature// "0x"
 };
 
 // enteryPront.getUserOpHash(userOp)
+
+// signature = signer.signMessage(ether.util.arrafy(userOpHash))
+
+userOp.sig = sigm;
+
 
 // conversion 
 

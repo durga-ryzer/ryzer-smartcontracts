@@ -23,7 +23,6 @@ contract RyzerRegistry is
     error InvalidAddress(address addr);
     error InvalidChainId(uint16 chainId);
     error InvalidParameter(string parameter);
-    error AddressAlreadyOwnsCompany();
     error InvalidCompanyId(uint256 companyId);
     error InvalidProjectId(uint256 projectId);
     error EtherNotAccepted();
@@ -255,7 +254,6 @@ contract RyzerRegistry is
         returns (uint256)
     {
         _validateCompanyInput(owner, name, jurisdiction);
-        if (companyIdForAddress[owner] != 0) revert AddressAlreadyOwnsCompany();
 
         uint256 newCompanyId = ++companyCount;
         companies[newCompanyId] = Company({

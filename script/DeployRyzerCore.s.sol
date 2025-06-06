@@ -30,9 +30,10 @@ contract DeployRyzerCore is Script {
 
         (address usdt, address ryzerToken, address deployer) = _helperConfig
             .activeNetworkConfig();
-        // address usdt = 0x8EBe3F72cBbc78bF0802180a72D73cCE82f821c2;
-        // address ryzerToken = 0xDF40382D86Fc26ac8938Cd23f7d4ba58BC32c608;
-        // address deployer = 0x3c5a809e712D30D932b71EdB066FA2EEDEE6Ad58;
+
+        console.log("USDT: ", usdt);
+        console.log("Ryzer Token: ", ryzerToken);
+        console.log("Deployer: ", deployer);
 
         vm.startBroadcast(deployer);
 
@@ -52,7 +53,7 @@ contract DeployRyzerCore is Script {
         // 2. Encode the call to initialize()
         bytes memory initDataForRegistry = abi.encodeWithSelector(
             registryImpl.initialize.selector,
-            block.chainid
+            (uint16(block.chainid))
         );
 
         // 3. Deploy ERC1967Proxy (UUPS-compatible)
@@ -74,6 +75,13 @@ contract DeployRyzerCore is Script {
         ERC1967Proxy factoryProxy = new ERC1967Proxy(
             address(factoryImpl),
             initDataForFactory
+        );
+
+        // set core contracts
+        RyzerFactory(address(factoryProxy)).setCoreContracts(
+            usdt,
+            ryzerToken,
+            address(registryProxy)
         );
 
         vm.stopBroadcast();
