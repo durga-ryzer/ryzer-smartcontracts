@@ -170,6 +170,25 @@
   },
   {
     "type": "function",
+    "name": "companyOwners",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "companyProjects",
     "inputs": [
       {
@@ -207,6 +226,11 @@
         "internalType": "struct RyzerFactory.ProjectParams",
         "components": [
           {
+            "name": "onchainID",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
             "name": "name",
             "type": "string",
             "internalType": "string"
@@ -217,37 +241,12 @@
             "internalType": "string"
           },
           {
-            "name": "assetType",
-            "type": "bytes32",
-            "internalType": "bytes32"
+            "name": "decimals",
+            "type": "uint8",
+            "internalType": "uint8"
           },
           {
-            "name": "chainId",
-            "type": "uint16",
-            "internalType": "uint16"
-          },
-          {
-            "name": "minInvestment",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "maxInvestment",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "totalSupply",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "assetId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "requiredSignatures",
+            "name": "maxSupply",
             "type": "uint256",
             "internalType": "uint256"
           },
@@ -262,9 +261,29 @@
             "internalType": "uint256"
           },
           {
-            "name": "eoiPct",
-            "type": "uint256",
-            "internalType": "uint256"
+            "name": "projectOwner",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "assetId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "metadataCID",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "assetType",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "legalMetadataCID",
+            "type": "bytes32",
+            "internalType": "bytes32"
           },
           {
             "name": "dividendPct",
@@ -277,24 +296,29 @@
             "internalType": "uint256"
           },
           {
-            "name": "metadataCID",
-            "type": "bytes32",
-            "internalType": "bytes32"
+            "name": "minInvestment",
+            "type": "uint256",
+            "internalType": "uint256"
           },
           {
-            "name": "legalMetadataCID",
-            "type": "bytes32",
-            "internalType": "bytes32"
+            "name": "maxInvestment",
+            "type": "uint256",
+            "internalType": "uint256"
           },
           {
-            "name": "projectOwner",
-            "type": "address",
-            "internalType": "address"
+            "name": "eoiPct",
+            "type": "uint256",
+            "internalType": "uint256"
           },
           {
-            "name": "factory",
-            "type": "address",
-            "internalType": "address"
+            "name": "lockPeriod",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "requiredSignatures",
+            "type": "uint8",
+            "internalType": "uint8"
           }
         ]
       }
@@ -496,12 +520,17 @@
   },
   {
     "type": "function",
-    "name": "ownerToCompany",
+    "name": "ownerToCompanies",
     "inputs": [
       {
         "name": "",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [

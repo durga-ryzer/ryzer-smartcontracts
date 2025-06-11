@@ -8,8 +8,7 @@ contract CheckConfig is Script {
     function run() external returns (HelperConfig) {
         HelperConfig _helperConfig = new HelperConfig();
 
-        (address usdt, address ryzerToken, address deployer) = _helperConfig
-            .activeNetworkConfig();
+        (address usdt, address ryzerToken, address deployer) = _helperConfig.activeNetworkConfig();
 
         console.log("USDT: ", usdt);
         console.log("Ryzer Token: ", ryzerToken);

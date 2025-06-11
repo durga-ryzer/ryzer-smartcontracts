@@ -109,19 +109,6 @@
   },
   {
     "type": "function",
-    "name": "chainId",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint16",
-        "internalType": "uint16"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "companies",
     "inputs": [
       {
@@ -536,13 +523,7 @@
   {
     "type": "function",
     "name": "initialize",
-    "inputs": [
-      {
-        "name": "_chainId",
-        "type": "uint16",
-        "internalType": "uint16"
-      }
-    ],
+    "inputs": [],
     "outputs": [],
     "stateMutability": "nonpayable"
   },
@@ -676,14 +657,14 @@
         "internalType": "string"
       },
       {
-        "name": "companyType",
-        "type": "uint8",
-        "internalType": "enum RyzerRegistry.CompanyType"
-      },
-      {
         "name": "jurisdiction",
         "type": "string",
         "internalType": "string"
+      },
+      {
+        "name": "companyType",
+        "type": "uint8",
+        "internalType": "enum RyzerRegistry.CompanyType"
       }
     ],
     "outputs": [
@@ -1080,10 +1061,10 @@
     "name": "RegistryInitialized",
     "inputs": [
       {
-        "name": "chainId",
-        "type": "uint16",
+        "name": "sender",
+        "type": "address",
         "indexed": false,
-        "internalType": "uint16"
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -1212,11 +1193,6 @@
   },
   {
     "type": "error",
-    "name": "AddressAlreadyOwnsCompany",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "AddressEmptyCode",
     "inputs": [
       {
@@ -1270,17 +1246,6 @@
         "name": "addr",
         "type": "address",
         "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidChainId",
-    "inputs": [
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "internalType": "uint16"
       }
     ]
   },

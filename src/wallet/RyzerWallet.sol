@@ -19,13 +19,7 @@ import "./ERC3643Support.sol";
  * SmartWallet: Semi-custodial smart account that supports ERC-4337 and ERC-3643.
  * Initialized by an admin, but owned by the user. Admin can submit userOps on behalf of the user.
  */
-contract RyzerWallet is
-    BaseAccount,
-    TokenCallbackHandler,
-    ERC3643Support,
-    UUPSUpgradeable,
-    Initializable
-{
+contract RyzerWallet is BaseAccount, TokenCallbackHandler, ERC3643Support, UUPSUpgradeable, Initializable {
     address public owner; // actual user
     address public admin; // account creator / relayer
     address public custodian;
@@ -34,11 +28,7 @@ contract RyzerWallet is
 
     event SignerAdded(address signer);
     event SignerRemoved(address signer);
-    event SmartWalletInitialized(
-        IEntryPoint indexed entryPoint,
-        address indexed owner,
-        address indexed admin
-    );
+    event SmartWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner, address indexed admin);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Unauthorized");
@@ -63,17 +53,11 @@ contract RyzerWallet is
         custodian = _custodian;
     }
 
-    function setOnchainID(
-        address token,
-        address _onchainID
-    ) external override onlyCustodian {
+    function setOnchainID(address token, address _onchainID) external override onlyCustodian {
         IToken(token).setOnchainID(_onchainID);
     }
 
-    function initialize(
-        address _admin,
-        address _owner
-    ) public virtual initializer {
+    function initialize(address _admin, address _owner) public virtual initializer {
         admin = _admin;
         owner = _owner;
         emit SmartWalletInitialized(_entryPoint, _owner, _admin);
@@ -83,35 +67,30 @@ contract RyzerWallet is
         entryPoint().depositTo{value: msg.value}(address(this));
     }
 
-    function withdrawDepositTo(
-        address payable withdrawAddress,
-        uint256 amount
-    ) public onlyAdmin {
+    function withdrawDepositTo(address payable withdrawAddress, uint256 amount) public onlyAdmin {
         entryPoint().withdrawTo(withdrawAddress, amount);
     }
 
     /// validate signature: only user (owner) can authorize UserOperation
-    function _validateSignature(
-        PackedUserOperation calldata userOp,
-        bytes32 userOpHash
-    ) internal virtual override returns (uint256 validationData) {
-        if (admin != ECDSA.recover(userOpHash, userOp.signature))
+    function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
+        internal
+        virtual
+        override
+        returns (uint256 validationData)
+    {
+        if (admin != ECDSA.recover(userOpHash, userOp.signature)) {
             return SIG_VALIDATION_FAILED;
+        }
         return SIG_VALIDATION_SUCCESS;
     }
 
     function _requireForExecute() internal view virtual override {
         require(
-            msg.sender == address(entryPoint()) ||
-                msg.sender == admin ||
-                msg.sender == owner,
-            "account: not authorized"
+            msg.sender == address(entryPoint()) || msg.sender == admin || msg.sender == owner, "account: not authorized"
         );
     }
 
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal view override {
+    function _authorizeUpgrade(address newImplementation) internal view override {
         (newImplementation);
         require(msg.sender == admin, "Unauthorized");
     }

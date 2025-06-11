@@ -10,7 +10,9 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-import "./interfaces/IRyzerProject.sol";
+import {console} from "forge-std/console.sol";
+
+import "./interfaces/IRyzerRealEstateToken.sol";
 
 /// @title RyzerEscrow
 /// @notice Manages USDT payments, dividends, and disputes for RWA projects in the Ryzer ecosystem
@@ -26,7 +28,7 @@ contract RyzerEscrow is
                          LIBRARIES
     //////////////////////////////////////////////////////////////*/
     using SafeERC20 for IERC20;
-    using SafeERC20 for IRyzerProject;
+    using SafeERC20 for IRyzerRealEstateToken;
 
     /*//////////////////////////////////////////////////////////////
                          ERRORS
@@ -43,7 +45,6 @@ contract RyzerEscrow is
     error AlreadySigned();
     error InvalidTokenDecimals(string token, uint8 decimals);
     error Unauthorized();
-    error InvalidChainId();
     error InvalidParameter(string parameter);
     error InsufficientBalance(uint256 balance, uint256 required);
 
@@ -79,8 +80,7 @@ contract RyzerEscrow is
     uint256 public constant MAX_REASON_LENGTH = 256;
 
     IERC20 public usdtToken;
-    IRyzerProject public projectContract;
-    uint16 public chainId;
+    IRyzerRealEstateToken public projectContract;
     uint256 public dividendPool;
     uint256 public requiredSignatures;
     uint256 public disputeCount;
@@ -96,55 +96,33 @@ contract RyzerEscrow is
     //////////////////////////////////////////////////////////////*/
     event EscrowInitialized(
         address indexed usdtToken,
-        address indexed projectContract,
-        uint16 chainId
+        address indexed projectContract
     );
     event Deposited(
         bytes32 indexed orderId,
         address indexed buyer,
         uint256 amount,
-        bytes32 assetId,
-        uint16 chainId
+        bytes32 assetId
     );
-    event Released(
-        bytes32 indexed orderId,
-        address indexed to,
-        uint256 amount,
-        uint16 chainId
-    );
+    event Released(bytes32 indexed orderId, address indexed to, uint256 amount);
     event DisputeRaised(
         bytes32 indexed disputeId,
         address indexed buyer,
         string reason,
-        uint256 amount,
-        uint16 chainId
+        uint256 amount
     );
-    event DisputeSigned(
-        bytes32 indexed disputeId,
-        address indexed signer,
-        uint16 chainId
-    );
+    event DisputeSigned(bytes32 indexed disputeId, address indexed signer);
     event DisputeResolved(
         bytes32 indexed disputeId,
         address indexed resolvedTo,
-        uint256 amount,
-        uint16 chainId
+        uint256 amount
     );
-    event DividendsDeposited(uint256 amount, uint16 chainId);
-    event DividendsDistributed(
-        address indexed recipient,
-        uint256 amount,
-        uint16 chainId
-    );
-    event EmergencyWithdrawal(
-        address indexed recipient,
-        uint256 amount,
-        uint16 chainId
-    );
+    event DividendsDeposited(uint256 amount);
+    event DividendsDistributed(address indexed recipient, uint256 amount);
+    event EmergencyWithdrawal(address indexed recipient, uint256 amount);
     event CoreContractsSet(
         address indexed usdtToken,
-        address indexed projectContract,
-        uint16 chainId
+        address indexed projectContract
     );
 
     /*//////////////////////////////////////////////////////////////
@@ -154,11 +132,9 @@ contract RyzerEscrow is
     /// @notice Initializes the escrow contract
     /// @param _usdtToken USDT token address
     /// @param _projectContract Project contract address
-    /// @param _chainId Network chain ID
     function initialize(
         address _usdtToken,
         address _projectContract,
-        uint16 _chainId,
         address _owner
     ) external initializer {
         if (_usdtToken == address(0) || _projectContract == address(0)) {
@@ -167,9 +143,7 @@ contract RyzerEscrow is
         if (_usdtToken.code.length == 0 || _projectContract.code.length == 0) {
             revert InvalidAddress(_usdtToken);
         }
-        if (_chainId == 0 || _chainId != uint16(block.chainid)) {
-            revert InvalidChainId();
-        }
+
         if (IERC20Metadata(_usdtToken).decimals() != USDT_TOKEN_DECIMAL) {
             revert InvalidTokenDecimals(
                 "USDT",
@@ -183,24 +157,21 @@ contract RyzerEscrow is
         __Pausable_init();
 
         usdtToken = IERC20(_usdtToken);
-        projectContract = IRyzerProject(_projectContract);
-        chainId = _chainId;
+        projectContract = IRyzerRealEstateToken(_projectContract);
         requiredSignatures = MIN_SIGNATURES;
 
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);
         _grantRole(ADMIN_ROLE, _owner);
 
-        emit EscrowInitialized(_usdtToken, _projectContract, _chainId);
+        emit EscrowInitialized(_usdtToken, _projectContract);
     }
 
     /// @notice Sets core contract addresses and chain ID
     /// @param _usdtToken New USDT token address
     /// @param _projectContract New project contract address
-    /// @param _chainId New network chain ID
     function setCoreContracts(
         address _usdtToken,
-        address _projectContract,
-        uint16 _chainId //onlyRole(ADMIN_ROLE)
+        address _projectContract //onlyRole(ADMIN_ROLE)
     ) external {
         if (_usdtToken == address(0) || _projectContract == address(0)) {
             revert InvalidAddress(address(0));
@@ -208,9 +179,7 @@ contract RyzerEscrow is
         if (_usdtToken.code.length == 0 || _projectContract.code.length == 0) {
             revert InvalidAddress(_usdtToken);
         }
-        if (_chainId == 0 || _chainId != uint16(block.chainid)) {
-            revert InvalidChainId();
-        }
+
         if (IERC20Metadata(_usdtToken).decimals() != USDT_TOKEN_DECIMAL) {
             revert InvalidTokenDecimals(
                 "USDT",
@@ -219,9 +188,8 @@ contract RyzerEscrow is
         }
 
         usdtToken = IERC20(_usdtToken);
-        projectContract = IRyzerProject(_projectContract);
-        chainId = _chainId;
-        emit CoreContractsSet(_usdtToken, _projectContract, _chainId);
+        projectContract = IRyzerRealEstateToken(_projectContract);
+        emit CoreContractsSet(_usdtToken, _projectContract);
     }
 
     /// @notice Deposits funds for an order
@@ -236,9 +204,11 @@ contract RyzerEscrow is
         uint256 paymentType,
         bytes32 assetId
     ) external nonReentrant whenNotPaused {
+        address orderManager = projectContract.getProjectDetails().orderManager;
+
+        if (msg.sender != orderManager) revert Unauthorized();
         if (buyer == address(0)) revert InvalidAddress(buyer);
         if (amount == 0) revert InvalidAmount();
-        //if (msg.sender != buyer && msg.sender != IRyzerProject(projectContract).owner()) revert Unauthorized();
         //_checkAllowanceAndBalance(buyer, amount);
         deposits[orderId] = Deposit({
             buyer: buyer,
@@ -248,13 +218,11 @@ contract RyzerEscrow is
 
         usdtToken.safeTransferFrom(buyer, address(this), amount / 1e12);
 
-        // if (paymentType == 1) {
-        //     IRyzerProject(projectContract).safeTransfer(buyer, amount * 1e18);
-        // }
+        if (paymentType == 1) {
+            projectContract.safeTransfer(buyer, amount);
+        }
 
-        IRyzerProject(projectContract).safeTransfer(buyer, amount);
-
-        emit Deposited(orderId, buyer, amount, assetId, chainId);
+        emit Deposited(orderId, buyer, amount, assetId);
     }
 
     function _checkAllowanceAndBalance(
@@ -299,7 +267,7 @@ contract RyzerEscrow is
                 // Clear signatures to prevent reuse
                 // Note: Individual signatures are not cleared to save gas, as count reset is sufficient
             }
-            emit Released(orderId, to, amount, chainId);
+            emit Released(orderId, to, amount);
         }
     }
 
@@ -317,7 +285,7 @@ contract RyzerEscrow is
 
         usdtToken.safeTransferFrom(buyer, address(this), amount);
         dividendPool += amount;
-        emit DividendsDeposited(amount, chainId);
+        emit DividendsDeposited(amount);
     }
 
     /// @notice Distributes dividends to a recipient
@@ -338,7 +306,7 @@ contract RyzerEscrow is
 
         dividendPool -= amount;
         usdtToken.safeTransfer(recipient, amount);
-        emit DividendsDistributed(recipient, amount, chainId);
+        emit DividendsDistributed(recipient, amount);
     }
 
     /// @notice Raises a dispute for an order
@@ -353,7 +321,8 @@ contract RyzerEscrow is
         if (buyer == address(0)) revert DepositNotFound();
         if (
             msg.sender != buyer &&
-            msg.sender != IRyzerProject(projectContract).owner()
+            msg.sender !=
+            IRyzerRealEstateToken(projectContract).getProjectOwner()
         ) revert Unauthorized();
         if (bytes(reason).length == 0) revert InvalidParameter("empty reason");
         if (bytes(reason).length > MAX_REASON_LENGTH) {
@@ -373,13 +342,7 @@ contract RyzerEscrow is
             resolvedTo: address(0)
         });
 
-        emit DisputeRaised(
-            disputeId,
-            buyer,
-            reason,
-            orderDeposit.amount,
-            chainId
-        );
+        emit DisputeRaised(disputeId, buyer, reason, orderDeposit.amount);
     }
 
     /// @notice Signs a dispute resolution
@@ -416,12 +379,7 @@ contract RyzerEscrow is
             delete disputeSignatureCount[disputeId];
             // Clear signatures to prevent reuse
             // Note: Individual signatures are not cleared to save gas, as count reset is sufficient
-            emit DisputeResolved(
-                disputeId,
-                resolvedTo,
-                dispute.amount,
-                chainId
-            );
+            emit DisputeResolved(disputeId, resolvedTo, dispute.amount);
         }
     }
 
@@ -439,7 +397,7 @@ contract RyzerEscrow is
         }
 
         usdtToken.safeTransfer(recipient, amount);
-        emit EmergencyWithdrawal(recipient, amount, chainId);
+        emit EmergencyWithdrawal(recipient, amount);
     }
 
     /// @notice Pauses the contract

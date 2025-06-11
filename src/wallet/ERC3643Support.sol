@@ -5,12 +5,9 @@ import "./interfaces/IToken.sol";
 
 // ERC1363 Receiver
 interface IERC1363Receiver {
-    function onTransferReceived(
-        address operator,
-        address from,
-        uint256 value,
-        bytes calldata data
-    ) external returns (bytes4);
+    function onTransferReceived(address operator, address from, uint256 value, bytes calldata data)
+        external
+        returns (bytes4);
 }
 
 // ERC777 Recipient
@@ -33,11 +30,7 @@ abstract contract ERC3643Support is IERC1363Receiver, IERC777Recipient {
 
     function setOnchainID(address token, address _onchainID) external virtual {}
 
-    function transferERC3643Token(
-        address token,
-        address to,
-        uint256 amount
-    ) external virtual {}
+    function transferERC3643Token(address token, address to, uint256 amount) external virtual {}
 
     function onchainID(address token) external view returns (address) {
         return IToken(token).onchainID();
@@ -46,12 +39,12 @@ abstract contract ERC3643Support is IERC1363Receiver, IERC777Recipient {
     // --- Token Callbacks ---
 
     /// @notice Handles ERC1363 token transfers
-    function onTransferReceived(
-        address operator,
-        address from,
-        uint256 value,
-        bytes calldata data
-    ) external pure override returns (bytes4) {
+    function onTransferReceived(address operator, address from, uint256 value, bytes calldata data)
+        external
+        pure
+        override
+        returns (bytes4)
+    {
         return IERC1363Receiver.onTransferReceived.selector;
     }
 

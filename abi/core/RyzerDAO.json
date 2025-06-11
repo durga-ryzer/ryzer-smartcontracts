@@ -157,19 +157,6 @@
   },
   {
     "type": "function",
-    "name": "chainId",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint16",
-        "internalType": "uint16"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "executeFallback",
     "inputs": [
       {
@@ -316,21 +303,6 @@
         "name": "_ryzerXToken",
         "type": "address",
         "internalType": "address"
-      },
-      {
-        "name": "_chainId",
-        "type": "uint16",
-        "internalType": "uint16"
-      },
-      {
-        "name": "initialSigners",
-        "type": "address[]",
-        "internalType": "address[]"
-      },
-      {
-        "name": "_requiredSignatures",
-        "type": "uint256",
-        "internalType": "uint256"
       },
       {
         "name": "_quorumThreshold",
@@ -621,11 +593,6 @@
         "name": "_project",
         "type": "address",
         "internalType": "address"
-      },
-      {
-        "name": "_chainId",
-        "type": "uint16",
-        "internalType": "uint16"
       }
     ],
     "outputs": [],
@@ -739,12 +706,6 @@
         "type": "address",
         "indexed": true,
         "internalType": "address"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -766,18 +727,6 @@
         "internalType": "address"
       },
       {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
-      },
-      {
-        "name": "requiredSignatures",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
         "name": "quorumThreshold",
         "type": "uint256",
         "indexed": false,
@@ -795,12 +744,6 @@
         "type": "uint256",
         "indexed": true,
         "internalType": "uint256"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -820,12 +763,6 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -883,12 +820,6 @@
         "type": "uint48",
         "indexed": false,
         "internalType": "uint48"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -902,12 +833,6 @@
         "type": "uint256",
         "indexed": true,
         "internalType": "uint256"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -927,12 +852,6 @@
         "type": "address",
         "indexed": true,
         "internalType": "address"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -1021,12 +940,6 @@
         "type": "address",
         "indexed": true,
         "internalType": "address"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -1040,12 +953,6 @@
         "type": "address",
         "indexed": true,
         "internalType": "address"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -1103,12 +1010,6 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -1222,11 +1123,6 @@
         "internalType": "address"
       }
     ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidChainId",
-    "inputs": []
   },
   {
     "type": "error",

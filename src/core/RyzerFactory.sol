@@ -16,7 +16,10 @@ import {RyzerRegistry} from "./RyzerRegistry.sol";
 interface IRyzerRegistry {
     enum CompanyType {
         LLC,
-        CORP,
+        PRIVATELIMITED,
+        DAOLLC,
+        CORPORATION,
+        PUBLICENTITY,
         PARTNERSHIP
     }
 
@@ -32,55 +35,39 @@ interface IRyzerRegistry {
     ) external;
 }
 
-// Updated IRyzerProject interface to include eoiPct
-interface IRyzerProject {
-    struct ProjectInitParams {
+// Updated IRyzerRealEstateToken interface to include eoiPct
+interface IRyzerRealEstateToken {
+    struct TokenConfig {
+        address identityRegistry;
+        address compliance;
+        address onchainID;
         string name;
         string symbol;
+        uint8 decimals;
         uint256 maxSupply;
         uint256 tokenPrice;
         uint256 cancelDelay;
         address projectOwner;
         address factory;
+        address escrow;
+        address orderManager;
+        address dao;
         bytes32 companyId;
         bytes32 assetId;
         bytes32 metadataCID;
         bytes32 assetType;
         bytes32 legalMetadataCID;
-        uint16 chainId;
         uint256 dividendPct;
         uint256 premintAmount;
         uint256 minInvestment;
         uint256 maxInvestment;
         uint256 eoiPct;
-    }
-
-    struct ProjectDetails {
-        string name;
-        string symbol;
-        uint256 maxSupply;
-        uint256 tokenPrice;
-        uint256 cancelDelay;
-        uint256 dividendPct;
-        uint256 minInvestment;
-        uint256 maxInvestment;
-        bytes32 assetType;
-        bytes32 metadataCID;
-        bytes32 legalMetadataCID;
-        bytes32 companyId;
-        bytes32 assetId;
-        address projectOwner;
-        address factoryOwner;
-        address escrow;
-        address orderManager;
-        address dao;
-        address owner;
-        uint16 chainId;
+        uint256 lockPeriod;
+        uint8 requiredSignatures;
         bool isActive;
     }
 
     function initialize(bytes memory initData) external;
-    function setUsdtToken(address _usdtToken) external;
     function setProjectContractsAndPreMint(
         address _escrow,
         address _orderManager,
@@ -91,30 +78,24 @@ interface IRyzerProject {
     function approveMetadataUpdate(uint256 updateId) external;
     function pause() external;
     function unpause() external;
-    function getProjectDetails() external view returns (ProjectDetails memory);
+    function getProjectDetails() external view returns (TokenConfig memory);
     function lockUntil(address user) external view returns (uint48);
-    function owner() external view returns (address);
     function getIsActive() external view returns (bool);
     function getInvestmentLimits()
         external
         view
         returns (uint256 minInvestment, uint256 maxInvestment);
-    function tokenPrice() external view returns (uint256);
-    function eoiPct() external view returns (uint256);
-    function dividendPct() external view returns (uint256);
 }
 
 interface IRyzerEscrow {
     function initialize(
         address usdtToken,
         address project,
-        uint16 chainId,
         address owner
     ) external;
     function setCoreContracts(
         address _usdtToken,
-        address _projectContract,
-        uint16 _chainId
+        address _projectContract
     ) external;
 }
 
@@ -123,7 +104,6 @@ interface IRyzerOrderManager {
         address usdtToken,
         address escrow,
         address project,
-        uint16 chainId,
         address owner
     ) external;
     function setProjectContracts(
@@ -138,7 +118,6 @@ interface IRyzerDAO {
     function initialize(
         address project,
         address ryzerXToken,
-        uint16 chainId,
         uint256 quorumThreshold
     ) external;
 }
@@ -183,7 +162,10 @@ contract RyzerFactory is
     //////////////////////////////////////////////////////////////*/
     enum CompanyType {
         LLC,
-        CORP,
+        PRIVATELIMITED,
+        DAOLLC,
+        CORPORATION,
+        PUBLICENTITY,
         PARTNERSHIP
     }
 
@@ -201,24 +183,25 @@ contract RyzerFactory is
     }
 
     struct ProjectParams {
+        address onchainID;
         string name;
         string symbol;
-        bytes32 assetType;
-        uint16 chainId;
-        uint256 minInvestment;
-        uint256 maxInvestment;
-        uint256 totalSupply;
-        bytes32 assetId;
-        uint256 requiredSignatures;
+        uint8 decimals;
+        uint256 maxSupply;
         uint256 tokenPrice;
         uint256 cancelDelay;
-        uint256 eoiPct;
+        address projectOwner;
+        bytes32 assetId;
+        bytes32 metadataCID;
+        bytes32 assetType;
+        bytes32 legalMetadataCID;
         uint256 dividendPct;
         uint256 premintAmount;
-        bytes32 metadataCID;
-        bytes32 legalMetadataCID;
-        address projectOwner;
-        address factory;
+        uint256 minInvestment;
+        uint256 maxInvestment;
+        uint256 eoiPct;
+        uint256 lockPeriod;
+        uint8 requiredSignatures;
     }
 
     struct TemplateProposal {
@@ -266,7 +249,8 @@ contract RyzerFactory is
     uint256 public requiredSignatures;
 
     mapping(uint256 => address[]) public companyProjects;
-    mapping(address => uint256) public ownerToCompany;
+    mapping(uint256 => address) public companyOwners;
+    mapping(address => uint256[]) public ownerToCompanies;
     mapping(uint256 => TemplateProposal) public templateProposals;
     mapping(uint256 => mapping(address => bool)) public proposalSigners;
     mapping(uint256 => mapping(address => address)) public projectEscrows;
@@ -444,7 +428,8 @@ contract RyzerFactory is
             params.jurisdiction,
             IRyzerRegistry.CompanyType(uint256(params.companyType))
         );
-        ownerToCompany[msg.sender] = newCompanyId;
+        ownerToCompanies[msg.sender].push(newCompanyId);
+        companyOwners[newCompanyId] = msg.sender;
         companyCount = newCompanyId;
 
         emit CompanyRegistered(
@@ -467,10 +452,9 @@ contract RyzerFactory is
         whenNotPaused
         returns (address, address, address, address)
     {
-        if (ownerToCompany[msg.sender] != companyId) revert NotCompanyOwner();
+        if (companyOwners[companyId] != msg.sender) revert NotCompanyOwner();
         _validateProjectParams(companyId, params);
 
-        uint16 chainId = params.chainId;
         Contracts memory contracts;
         contracts.project = Clones.clone(projectTemplate);
         contracts.escrow = Clones.clone(escrowTemplate);
@@ -490,31 +474,42 @@ contract RyzerFactory is
             contracts.dao.code.length == 0
         ) revert DeploymentFailed("invalid clone code");
 
+        // deploy identity registry and compliance first
+
         // Initialize Project
         try
-            IRyzerProject(contracts.project).initialize(
+            IRyzerRealEstateToken(contracts.project).initialize(
                 abi.encode(
-                    IRyzerProject.ProjectInitParams({
+                    IRyzerRealEstateToken.TokenConfig({
+                        identityRegistry: address(1),
+                        compliance: address(1),
+                        onchainID: params.onchainID,
                         name: params.name,
                         symbol: string(
                             (abi.encodePacked("RYZX-", params.symbol))
-                        ), // fix collisions (need to be unique)
-                        maxSupply: params.totalSupply,
+                        ),
+                        decimals: params.decimals,
+                        maxSupply: params.maxSupply,
                         tokenPrice: params.tokenPrice,
                         cancelDelay: params.cancelDelay,
                         projectOwner: params.projectOwner,
-                        factory: params.factory,
+                        factory: address(this),
+                        escrow: contracts.escrow,
+                        orderManager: contracts.orderManager,
+                        dao: contracts.dao,
                         companyId: bytes32(companyId),
                         assetId: params.assetId,
                         metadataCID: params.metadataCID,
                         assetType: params.assetType,
                         legalMetadataCID: params.legalMetadataCID,
-                        chainId: chainId,
                         dividendPct: params.dividendPct,
                         premintAmount: params.premintAmount,
                         minInvestment: params.minInvestment,
                         maxInvestment: params.maxInvestment,
-                        eoiPct: params.eoiPct
+                        eoiPct: params.eoiPct,
+                        requiredSignatures: params.requiredSignatures,
+                        lockPeriod: params.lockPeriod,
+                        isActive: true
                     })
                 )
             )
@@ -524,7 +519,6 @@ contract RyzerFactory is
                 IRyzerEscrow(contracts.escrow).initialize(
                     address(usdtToken),
                     contracts.project,
-                    chainId,
                     params.projectOwner
                 )
             {} catch {
@@ -537,7 +531,6 @@ contract RyzerFactory is
                     address(usdtToken),
                     contracts.escrow,
                     contracts.project,
-                    chainId,
                     params.projectOwner
                 )
             {} catch {
@@ -549,7 +542,6 @@ contract RyzerFactory is
                 IRyzerDAO(contracts.dao).initialize(
                     contracts.project,
                     address(ryzerXToken),
-                    chainId,
                     60 // change it
                 )
             {} catch {
@@ -558,12 +550,13 @@ contract RyzerFactory is
 
             // Set project contracts
             try
-                IRyzerProject(contracts.project).setProjectContractsAndPreMint(
-                    contracts.escrow,
-                    contracts.orderManager,
-                    contracts.dao,
-                    params.premintAmount
-                )
+                IRyzerRealEstateToken(contracts.project)
+                    .setProjectContractsAndPreMint(
+                        contracts.escrow,
+                        contracts.orderManager,
+                        contracts.dao,
+                        params.premintAmount
+                    )
             {} catch {
                 revert DeploymentFailed("project contract setup failed");
             }
@@ -571,8 +564,7 @@ contract RyzerFactory is
             try
                 IRyzerEscrow(contracts.escrow).setCoreContracts(
                     address(usdtToken),
-                    contracts.project,
-                    uint16(block.chainid)
+                    contracts.project
                 )
             {} catch {
                 revert DeploymentFailed("core contract setup failed");
@@ -586,15 +578,6 @@ contract RyzerFactory is
                 )
             {} catch {
                 revert DeploymentFailed("core contract setup failed");
-            }
-
-            // Set USDT token
-            try
-                IRyzerProject(contracts.project).setUsdtToken(
-                    address(usdtToken)
-                )
-            {} catch {
-                revert DeploymentFailed("USDT token setup failed");
             }
 
             RyzerRegistry.ProjectParams memory projectParams = RyzerRegistry
@@ -659,7 +642,7 @@ contract RyzerFactory is
     function _validateProjectParams(
         uint256 companyId,
         ProjectParams calldata params
-    ) private view {
+    ) private pure {
         if (companyId == 0) revert InvalidParameter("companyId");
         if (
             bytes(params.name).length < MIN_NAME_LENGTH ||
@@ -670,26 +653,22 @@ contract RyzerFactory is
         if (
             params.minInvestment == 0 ||
             params.maxInvestment < params.minInvestment ||
-            params.totalSupply == 0 ||
+            params.maxSupply == 0 ||
             params.tokenPrice == 0 ||
             params.cancelDelay == 0 ||
             params.eoiPct == 0 ||
             params.eoiPct > 50 ||
             params.dividendPct > 50 ||
-            params.premintAmount > params.totalSupply ||
+            params.premintAmount > params.maxSupply ||
             params.metadataCID == bytes32(0) ||
             params.legalMetadataCID == bytes32(0) ||
-            params.projectOwner == address(0) ||
-            params.factory != address(this)
+            params.projectOwner == address(0)
         ) revert InvalidParameter("invalid project parameter");
         if (
             params.requiredSignatures < MIN_SIGNATURES ||
             params.requiredSignatures > MAX_SIGNATURES
         ) {
             revert InvalidSignatureCount();
-        }
-        if (params.chainId != uint16(block.chainid)) {
-            revert InvalidParameter("chainId");
         }
     }
 

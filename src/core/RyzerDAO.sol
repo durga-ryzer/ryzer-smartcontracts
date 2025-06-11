@@ -34,7 +34,6 @@ contract RyzerDAO is
     error ProposalNotExpired();
     error InvalidSignatureCount();
     error InvalidParameter(string parameter);
-    error InvalidChainId();
     error CannotModifyAdmin(address addr);
 
     /*//////////////////////////////////////////////////////////////
@@ -67,7 +66,6 @@ contract RyzerDAO is
 
     IERC20 public ryzerXToken;
     address public project;
-    uint16 public chainId;
     uint256 public proposalCount;
     uint256 public requiredSignatures;
     uint256 public quorumThreshold; // Percentage (e.g., 66 for 66%)
@@ -79,45 +77,16 @@ contract RyzerDAO is
                            EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    event DAOInitialized(
-        address indexed ryzerXToken,
-        address indexed project,
-        uint16 chainId,
-        uint256 quorumThreshold
-    );
-    event CoreContractsSet(
-        address indexed ryzerXToken,
-        address indexed project,
-        uint16 chainId
-    );
-    event ProposalCreated(
-        uint256 indexed proposalId,
-        address indexed proposer,
-        string description,
-        uint48 delay,
-        uint16 chainId
-    );
-    event Voted(
-        uint256 indexed proposalId,
-        address indexed voter,
-        bool support,
-        uint256 weight,
-        uint16 chainId
-    );
-    event ProposalSigned(
-        uint256 indexed proposalId,
-        address indexed signer,
-        uint16 chainId
-    );
-    event ProposalExecuted(uint256 indexed proposalId, uint16 chainId);
-    event FallbackExecution(uint256 indexed proposalId, uint16 chainId);
-    event SignerAdded(address indexed signer, uint16 chainId);
-    event SignerRevoked(address indexed signer, uint16 chainId);
-    event GovernanceParamsSet(
-        uint256 requiredSignatures,
-        uint256 quorumThreshold,
-        uint16 chainId
-    );
+    event DAOInitialized(address indexed ryzerXToken, address indexed project, uint256 quorumThreshold);
+    event CoreContractsSet(address indexed ryzerXToken, address indexed project);
+    event ProposalCreated(uint256 indexed proposalId, address indexed proposer, string description, uint48 delay);
+    event Voted(uint256 indexed proposalId, address indexed voter, bool support, uint256 weight);
+    event ProposalSigned(uint256 indexed proposalId, address indexed signer);
+    event ProposalExecuted(uint256 indexed proposalId);
+    event FallbackExecution(uint256 indexed proposalId);
+    event SignerAdded(address indexed signer);
+    event SignerRevoked(address indexed signer);
+    event GovernanceParamsSet(uint256 requiredSignatures, uint256 quorumThreshold);
 
     /*//////////////////////////////////////////////////////////////
                            EXTERNAL FUNCTIONS
@@ -126,22 +95,13 @@ contract RyzerDAO is
     /// @notice Initializes the DAO
     /// @param _project Project address
     /// @param _ryzerXToken RyzerX token address
-    /// @param _chainId Network chain ID
     /// @param _quorumThreshold Quorum threshold percentage (e.g., 66 for 66%)
-    function initialize(
-        address _project,
-        address _ryzerXToken,
-        uint16 _chainId,
-        uint256 _quorumThreshold
-    ) external initializer {
+    function initialize(address _project, address _ryzerXToken, uint256 _quorumThreshold) external initializer {
         if (_project == address(0) || _ryzerXToken == address(0)) {
             revert InvalidAddress(address(0));
         }
         if (_project.code.length == 0 || _ryzerXToken.code.length == 0) {
             revert InvalidAddress(_project);
-        }
-        if (_chainId == 0 || _chainId != uint16(block.chainid)) {
-            revert InvalidChainId();
         }
 
         if (_quorumThreshold < 50 || _quorumThreshold > 100) {
@@ -155,51 +115,34 @@ contract RyzerDAO is
 
         project = _project;
         ryzerXToken = IERC20(_ryzerXToken);
-        chainId = _chainId;
         quorumThreshold = _quorumThreshold;
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
 
-        emit DAOInitialized(_ryzerXToken, _project, _chainId, _quorumThreshold);
+        emit DAOInitialized(_ryzerXToken, _project, _quorumThreshold);
     }
 
     /// @notice Sets core contract addresses and chain ID
     /// @param _ryzerXToken New RyzerX token address
     /// @param _project New project address
-    /// @param _chainId New network chain ID
-    function setCoreContracts(
-        address _ryzerXToken,
-        address _project,
-        uint16 _chainId
-    ) external onlyRole(ADMIN_ROLE) {
+    function setCoreContracts(address _ryzerXToken, address _project) external onlyRole(ADMIN_ROLE) {
         if (_project == address(0) || _ryzerXToken == address(0)) {
             revert InvalidAddress(address(0));
         }
         if (_project.code.length == 0 || _ryzerXToken.code.length == 0) {
             revert InvalidAddress(_project);
         }
-        if (_chainId == 0 || _chainId != uint16(block.chainid)) {
-            revert InvalidChainId();
-        }
-
         ryzerXToken = IERC20(_ryzerXToken);
         project = _project;
-        chainId = _chainId;
-        emit CoreContractsSet(_ryzerXToken, _project, _chainId);
+        emit CoreContractsSet(_ryzerXToken, _project);
     }
 
     /// @notice Sets governance parameters
     /// @param _requiredSignatures Number of required signatures
     /// @param _quorumThreshold Quorum threshold percentage (e.g., 66 for 66%)
-    function setGovernanceParams(
-        uint256 _requiredSignatures,
-        uint256 _quorumThreshold
-    ) external onlyRole(ADMIN_ROLE) {
-        if (
-            _requiredSignatures < MIN_SIGNATURES ||
-            _requiredSignatures > MAX_SIGNATURES
-        ) {
+    function setGovernanceParams(uint256 _requiredSignatures, uint256 _quorumThreshold) external onlyRole(ADMIN_ROLE) {
+        if (_requiredSignatures < MIN_SIGNATURES || _requiredSignatures > MAX_SIGNATURES) {
             revert InvalidSignatureCount();
         }
         if (_quorumThreshold < 50 || _quorumThreshold > 100) {
@@ -208,20 +151,13 @@ contract RyzerDAO is
 
         requiredSignatures = _requiredSignatures;
         quorumThreshold = _quorumThreshold;
-        emit GovernanceParamsSet(
-            _requiredSignatures,
-            _quorumThreshold,
-            chainId
-        );
+        emit GovernanceParamsSet(_requiredSignatures, _quorumThreshold);
     }
 
     /// @notice Creates a new proposal
     /// @param description Proposal description (1 to 1000 bytes)
     /// @param delay Voting delay (1 hour to 30 days)
-    function propose(
-        string calldata description,
-        uint48 delay
-    ) external nonReentrant whenNotPaused {
+    function propose(string calldata description, uint48 delay) external nonReentrant whenNotPaused {
         if (ryzerXToken.balanceOf(msg.sender) < MIN_QUORUM) {
             revert InsufficientBalance();
         }
@@ -238,32 +174,18 @@ contract RyzerDAO is
         proposal.description = description;
         proposal.startTime = uint48(block.timestamp + delay);
         proposal.endTime = uint48(block.timestamp + delay + VOTING_DURATION);
-        proposal.deadline = uint48(
-            block.timestamp + delay + EXECUTION_DEADLINE
-        );
+        proposal.deadline = uint48(block.timestamp + delay + EXECUTION_DEADLINE);
 
-        emit ProposalCreated(
-            proposalCount,
-            msg.sender,
-            description,
-            delay,
-            chainId
-        );
+        emit ProposalCreated(proposalCount, msg.sender, description, delay);
     }
 
     /// @notice Votes on a proposal
     /// @param proposalId Proposal ID
     /// @param support Vote support (true for, false against)
-    function vote(
-        uint256 proposalId,
-        bool support
-    ) external nonReentrant whenNotPaused {
+    function vote(uint256 proposalId, bool support) external nonReentrant whenNotPaused {
         Proposal storage proposal = proposals[proposalId];
         if (proposal.startTime == 0) revert ProposalNotFound();
-        if (
-            block.timestamp < proposal.startTime ||
-            block.timestamp > proposal.endTime
-        ) revert VotingPeriodEnded();
+        if (block.timestamp < proposal.startTime || block.timestamp > proposal.endTime) revert VotingPeriodEnded();
         if (proposalVoters[proposalId][msg.sender]) revert AlreadyVoted();
 
         uint256 weight = ryzerXToken.balanceOf(msg.sender);
@@ -276,25 +198,20 @@ contract RyzerDAO is
             proposal.againstVotes += weight;
         }
 
-        emit Voted(proposalId, msg.sender, support, weight, chainId);
+        emit Voted(proposalId, msg.sender, support, weight);
     }
 
     /// @notice Signs a proposal for execution
     /// @param proposalId Proposal ID
     /// @dev Reverts with AlreadySigned if the sender has already signed
-    function signProposal(
-        uint256 proposalId
-    ) external nonReentrant onlyRole(ADMIN_ROLE) whenNotPaused {
+    function signProposal(uint256 proposalId) external nonReentrant onlyRole(ADMIN_ROLE) whenNotPaused {
         Proposal storage proposal = proposals[proposalId];
         uint48 startTime = proposal.startTime;
         if (startTime == 0) revert ProposalNotFound();
         if (block.timestamp > proposal.deadline) revert ProposalExpired();
         if (proposalSigners[proposalId][msg.sender]) revert AlreadySigned();
         uint256 totalVotes = proposal.forVotes + proposal.againstVotes;
-        if (
-            totalVotes < MIN_QUORUM ||
-            (proposal.forVotes * 100) / totalVotes < quorumThreshold
-        ) {
+        if (totalVotes < MIN_QUORUM || (proposal.forVotes * 100) / totalVotes < quorumThreshold) {
             revert InsufficientQuorum();
         }
 
@@ -302,35 +219,28 @@ contract RyzerDAO is
         proposal.signatureCount++;
         uint256 signaturesRequired = requiredSignatures;
 
-        if (
-            proposal.signatureCount >= signaturesRequired && !proposal.executed
-        ) {
+        if (proposal.signatureCount >= signaturesRequired && !proposal.executed) {
             proposal.executed = true;
-            emit ProposalExecuted(proposalId, chainId);
+            emit ProposalExecuted(proposalId);
         }
 
-        emit ProposalSigned(proposalId, msg.sender, chainId);
+        emit ProposalSigned(proposalId, msg.sender);
     }
 
     /// @notice Executes a proposal after timeout if signatures are insufficient
     /// @param proposalId Proposal ID
-    function executeFallback(
-        uint256 proposalId
-    ) external onlyRole(ADMIN_ROLE) whenNotPaused {
+    function executeFallback(uint256 proposalId) external onlyRole(ADMIN_ROLE) whenNotPaused {
         Proposal storage proposal = proposals[proposalId];
         if (proposal.startTime == 0) revert ProposalNotFound();
         if (block.timestamp <= proposal.deadline) revert ProposalNotExpired();
         if (proposal.executed) revert ProposalNotFound();
         uint256 totalVotes = proposal.forVotes + proposal.againstVotes;
-        if (
-            totalVotes < MIN_QUORUM ||
-            (proposal.forVotes * 100) / totalVotes < quorumThreshold
-        ) {
+        if (totalVotes < MIN_QUORUM || (proposal.forVotes * 100) / totalVotes < quorumThreshold) {
             revert InsufficientQuorum();
         }
 
         proposal.executed = true;
-        emit FallbackExecution(proposalId, chainId);
+        emit FallbackExecution(proposalId);
     }
 
     /// @notice Adds a new signer
@@ -341,7 +251,7 @@ contract RyzerDAO is
             revert CannotModifyAdmin(signer);
         }
         _grantRole(ADMIN_ROLE, signer);
-        emit SignerAdded(signer, chainId);
+        emit SignerAdded(signer);
     }
 
     /// @notice Revokes a signer
@@ -354,7 +264,7 @@ contract RyzerDAO is
             revert CannotModifyAdmin(signer);
         }
         _revokeRole(ADMIN_ROLE, signer);
-        emit SignerRevoked(signer, chainId);
+        emit SignerRevoked(signer);
     }
 
     /// @notice Pauses the contract
@@ -373,13 +283,8 @@ contract RyzerDAO is
 
     /// @notice Authorizes contract upgrades
     /// @param newImplementation New implementation address
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal view override onlyRole(ADMIN_ROLE) {
-        if (
-            newImplementation == address(0) ||
-            newImplementation.code.length == 0
-        ) {
+    function _authorizeUpgrade(address newImplementation) internal view override onlyRole(ADMIN_ROLE) {
+        if (newImplementation == address(0) || newImplementation.code.length == 0) {
             revert InvalidAddress(newImplementation);
         }
     }
@@ -391,9 +296,7 @@ contract RyzerDAO is
     /// @notice Gets proposal status
     /// @param proposalId Proposal ID
     /// @return proposal Proposal details
-    function getProposalStatus(
-        uint256 proposalId
-    ) external view returns (Proposal memory proposal) {
+    function getProposalStatus(uint256 proposalId) external view returns (Proposal memory proposal) {
         return proposals[proposalId];
     }
 }

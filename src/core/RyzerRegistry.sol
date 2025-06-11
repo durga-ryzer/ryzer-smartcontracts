@@ -21,7 +21,6 @@ contract RyzerRegistry is
                            ERRORS
     //////////////////////////////////////////////////////////////*/
     error InvalidAddress(address addr);
-    error InvalidChainId(uint16 chainId);
     error InvalidParameter(string parameter);
     error InvalidCompanyId(uint256 companyId);
     error InvalidProjectId(uint256 projectId);
@@ -33,11 +32,11 @@ contract RyzerRegistry is
     // Enums
     enum CompanyType {
         LLC,
-        PrivateLimited,
+        PRIVATELIMITED,
         DAOLLC,
-        Corporation,
-        PublicEntity,
-        Partnership
+        CORPORATION,
+        PUBLICENTITY,
+        PARTNERSHIP
     }
     enum AssetType {
         Commercial,
@@ -114,7 +113,6 @@ contract RyzerRegistry is
 
     // Core state
     address public factory;
-    uint16 public chainId;
     uint256 public companyCount;
     uint256 public projectCount;
 
@@ -127,7 +125,7 @@ contract RyzerRegistry is
     /*//////////////////////////////////////////////////////////////
                            EVENTS
     //////////////////////////////////////////////////////////////*/
-    event RegistryInitialized(uint16 chainId);
+    event RegistryInitialized(address sender);
     event FactoryUpdated(address factory);
     event CompanyRegistered(
         uint256 indexed companyId,
@@ -195,25 +193,18 @@ contract RyzerRegistry is
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Initializes the registry
-    /// @param _chainId Chain ID
-    function initialize(uint16 _chainId) external initializer {
-        if (_chainId == 0 || _chainId != uint16(block.chainid)) {
-            revert InvalidChainId(_chainId);
-        }
-
+    function initialize() external initializer {
         __UUPSUpgradeable_init();
         __AccessControl_init();
         __Pausable_init();
         __ReentrancyGuard_init();
-
-        chainId = _chainId;
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
         _setRoleAdmin(REGISTRY_ADMIN_ROLE, ADMIN_ROLE);
         _grantRole(REGISTRY_ADMIN_ROLE, msg.sender);
 
-        emit RegistryInitialized(_chainId);
+        emit RegistryInitialized(msg.sender);
     }
 
     /// @notice Sets the factory address

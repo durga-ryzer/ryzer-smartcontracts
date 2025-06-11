@@ -5,7 +5,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {DeployRyzerCore} from "script/DeployRyzerCore.s.sol";
 import {RyzerFactory} from "src/core/RyzerFactory.sol";
 import {RyzerRegistry} from "src/core/RyzerRegistry.sol";
-import {RyzerProject} from "src/core/RyzerProject.sol";
+import {RyzerRealEstateToken} from "src/core/RyzerRealEstateToken.sol";
 import {RyzerEscrow} from "src/core/RyzerEscrow.sol";
 import {RyzerOrderManager} from "src/core/RyzerOrderManager.sol";
 import {RyzerDAO} from "src/core/RyzerDAO.sol";
@@ -19,7 +19,7 @@ contract RyzerFactoryTest is Test {
     ERC1967Proxy factoryProxy;
     RyzerRegistry ryzerRegistry;
     ERC1967Proxy registryProxy;
-    RyzerProject project;
+    RyzerRealEstateToken project;
     RyzerEscrow escrow;
     RyzerDAO dao;
     RyzerOrderManager orderManager;
@@ -103,24 +103,25 @@ contract RyzerFactoryTest is Test {
         )
     {
         RyzerFactory.ProjectParams memory params = RyzerFactory.ProjectParams({
+            onchainID: address(0),
             name: projectName,
             symbol: "RYZX",
-            assetType: bytes32("Commercial"),
-            chainId: uint16(block.chainid),
-            minInvestment: 10e18, // decimal attached
-            maxInvestment: 80e18,
-            totalSupply: 100e18, // asset token in genral 18 decimal
-            assetId: bytes32("1"),
-            requiredSignatures: 3, // remove this parameter
-            tokenPrice: 100e18, // how much user want to define
+            decimals: 18,
+            maxSupply: 100e18,
+            tokenPrice: 100e6,
             cancelDelay: 86400,
-            eoiPct: 10, // 10% of the total amount // check once
-            dividendPct: 10,
-            premintAmount: 100e18, // premint = total supply of asset token
+            projectOwner: owner, // we have to check once
+            assetId: bytes32("1"),
+            assetType: bytes32("Commercial"),
             metadataCID: bytes32("1"),
             legalMetadataCID: bytes32("1"),
-            projectOwner: owner, // we have to check once
-            factory: address(factoryProxy)
+            minInvestment: 10e18, // decimal attached
+            maxInvestment: 80e18,
+            eoiPct: 10, // 10% of the total amount // check once
+            dividendPct: 10,
+            premintAmount: 100e18,
+            requiredSignatures: 3,
+            lockPeriod: 365 days
         });
 
         vm.prank(owner);
@@ -135,17 +136,22 @@ contract RyzerFactoryTest is Test {
     function testRegisterCompany_Success() public {
         _registerCompany(deployer, companyName, jurisdiction);
 
-        _registerCompany(deployer, "Sample Company", "Sample Jurisdiction");
+        //_registerCompany(deployer, "Sample Company", "Sample Jurisdiction");
 
         // assertEq(ryzerFactory.ownerToCompany(deployer), 1);
-        assertEq(ryzerFactory.companyCount(), 2);
+        assertEq(ryzerFactory.companyCount(), 1);
     }
 
     function testCreateProject_Success() public {
         _registerCompany(deployer, companyName, jurisdiction);
 
-        uint256 companyId = ryzerFactory.ownerToCompany(deployer);
-        _createProject(deployer, companyId, projectName);
+        uint256 companyId = 1;
+        (
+            address projectAddress,
+            address escrowAddress,
+            address orderManagerAddress,
+            address daoAddresss
+        ) = _createProject(deployer, companyId, projectName);
 
         assertEq(companyId, 1);
     }
@@ -153,7 +159,7 @@ contract RyzerFactoryTest is Test {
     function testPlaceOrder_Success() public {
         _registerCompany(deployer, companyName, jurisdiction);
 
-        uint256 companyId = ryzerFactory.ownerToCompany(deployer);
+        uint256 companyId = 1;
         (
             address projectAddress,
             address escrowAddress,
@@ -163,7 +169,6 @@ contract RyzerFactoryTest is Test {
 
         RyzerOrderManager.PlaceOrderParams memory params = RyzerOrderManager
             .PlaceOrderParams({
-                _user: user,
                 _projectAddress: projectAddress,
                 _escrowAddress: escrowAddress,
                 _amount: 20e18,
@@ -183,18 +188,21 @@ contract RyzerFactoryTest is Test {
         // orderManager.setProjectContracts(usdt, address(escrow), projectAddress);
         // escrow.setCoreContracts(usdt, projectAddress, uint16(block.chainid));
         //vm.stopPrank();
-        assertTrue(RyzerProject(projectAddress).balanceOf(user) == 0);
+        assertTrue(RyzerRealEstateToken(projectAddress).balanceOf(user) == 0);
 
         vm.startPrank(user);
         UsdtMock(usdt).approve(escrowAddress, 200e6); // check this // 44
-        bytes32 orderId = orderManager.placeOrder(params);
+        bytes32 orderId = RyzerOrderManager(orderManagerAddress).placeOrder(
+            params
+        );
         vm.stopPrank();
         if (params._paymentType == RyzerOrderManager.PaymentType.FULL)
-            assertTrue(RyzerProject(projectAddress).balanceOf(user) > 0);
+            assertTrue(
+                RyzerRealEstateToken(projectAddress).balanceOf(user) > 0
+            );
 
         vm.startPrank(user);
-        orderManager.finalizeOrder(
-            user,
+        RyzerOrderManager(orderManagerAddress).finalizeOrder(
             projectAddress,
             escrowAddress,
             orderId

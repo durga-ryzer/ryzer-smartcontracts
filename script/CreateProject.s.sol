@@ -5,18 +5,18 @@ import "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {RyzerRegistry} from "src/core/RyzerRegistry.sol";
 import {RyzerFactory} from "src/core/RyzerFactory.sol";
-import {RyzerProject} from "src/core/RyzerProject.sol";
+import {RyzerRealEstateToken} from "src/core/RyzerRealEstateToken.sol";
 import {RyzerEscrow} from "src/core/RyzerEscrow.sol";
 import {RyzerOrderManager} from "src/core/RyzerOrderManager.sol";
 import {RyzerDAO} from "src/core/RyzerDAO.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 
 contract CreateProject is Script {
-    address factoryProxy = 0x0C91DAEF85FC0a5509D18A7fE8a75baF8DCa9280;
+    address factoryProxy = 0xC2bD23767E9cA47C9362E9059EDae151dD07ef9e; // xrpl
     RyzerFactory ryzerFactory = RyzerFactory(factoryProxy);
 
-    string projectName = "Akash. Project";
-    string projectSymbol = "AKASH369";
+    string projectName = "Akash Project";
+    string projectSymbol = "AK47";
 
     function run() external {
         address deployer = 0x3c5a809e712D30D932b71EdB066FA2EEDEE6Ad58;
@@ -54,24 +54,25 @@ contract CreateProject is Script {
         )
     {
         RyzerFactory.ProjectParams memory params = RyzerFactory.ProjectParams({
+            onchainID: address(0),
             name: projectName,
             symbol: projectSymbol,
-            assetType: bytes32("Commercial"),
-            chainId: uint16(block.chainid),
-            minInvestment: 10e18, // decimal attached
-            maxInvestment: 100e18,
-            totalSupply: 1000e18, // asset token in genral 18 decimal
-            assetId: bytes32("1"),
-            requiredSignatures: 3, // remove this parameter
-            tokenPrice: 100e18, // how much user want to define
+            decimals: 18,
+            maxSupply: 100e18,
+            tokenPrice: 100e6,
             cancelDelay: 86400,
-            eoiPct: 10, // 10% of the total amount // check once
-            dividendPct: 10,
-            premintAmount: 1000e18, // premint = total supply of asset token
+            projectOwner: owner, // we have to check once
+            assetId: bytes32("1"),
+            assetType: bytes32("Commercial"),
             metadataCID: bytes32("1"),
             legalMetadataCID: bytes32("1"),
-            projectOwner: owner, // we have to check once
-            factory: address(factoryProxy)
+            minInvestment: 10e18, // decimal attached
+            maxInvestment: 80e18,
+            eoiPct: 10, // 10% of the total amount // check once
+            dividendPct: 10,
+            premintAmount: 100e18,
+            requiredSignatures: 3,
+            lockPeriod: 365 days
         });
         (
             expectedProject,
@@ -83,31 +84,18 @@ contract CreateProject is Script {
 }
 
 contract RegisterCompany is Script {
-    address factoryProxy = 0xBdFE3b3aBE5ac3327A37eE78BC58890b0482b143;
+    address factoryProxy = 0xC2bD23767E9cA47C9362E9059EDae151dD07ef9e;
     RyzerFactory ryzerFactory = RyzerFactory(factoryProxy);
 
     function run() external {
         address deployer = 0x3c5a809e712D30D932b71EdB066FA2EEDEE6Ad58;
-        address usdt = 0x8c99B4e51eA9Aa3df5F44FAeF0061f7Ad9Ef5102;
-        address ryzerToken = 0x784E7DeBd0690697B69688B6daA684611b6B8079; //0xDF40382D86Fc26ac8938Cd23f7d4ba58BC32c608;
-        address registryProxy = 0x370a3b5Cb223d2C047C2666Aa567Cc76D5410f0b;
 
         vm.startBroadcast(deployer);
 
-        ryzerFactory.setCoreContracts(usdt, ryzerToken, registryProxy);
-
-        // uint256 companyId = _registerCompany(
-        //     deployer,
-        //     "Sample Company",
-        //     "Sample Jurisdiction"
-        // );
+        uint256 companyId = _registerCompany(deployer, "Amazon", "India");
 
         vm.stopBroadcast();
-        // console.log("Company Id", companyId);
-        // console.log(
-        //     "Company Registered",
-        //     ryzerFactory.ownerToCompany(deployer)
-        // );
+        console.log("Company Id", companyId);
     }
 
     function _registerCompany(

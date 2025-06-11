@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {RyzerRegistry} from "src/core/RyzerRegistry.sol";
 import {RyzerFactory} from "src/core/RyzerFactory.sol";
-import {RyzerProject} from "src/core/RyzerProject.sol";
+import {RyzerRealEstateToken} from "src/core/RyzerRealEstateToken.sol";
 import {RyzerEscrow} from "src/core/RyzerEscrow.sol";
 import {RyzerOrderManager} from "src/core/RyzerOrderManager.sol";
 import {RyzerDAO} from "src/core/RyzerDAO.sol";
@@ -19,7 +19,7 @@ contract DeployRyzerCore is Script {
             RyzerRegistry,
             ERC1967Proxy,
             RyzerFactory,
-            RyzerProject,
+            RyzerRealEstateToken,
             RyzerEscrow,
             RyzerOrderManager,
             RyzerDAO,
@@ -42,7 +42,7 @@ contract DeployRyzerCore is Script {
 
         RyzerFactory factoryImpl = new RyzerFactory();
 
-        RyzerProject _projectTemplate = new RyzerProject();
+        RyzerRealEstateToken _projectTemplate = new RyzerRealEstateToken();
 
         RyzerEscrow _escrowTemplate = new RyzerEscrow();
 
@@ -52,8 +52,7 @@ contract DeployRyzerCore is Script {
 
         // 2. Encode the call to initialize()
         bytes memory initDataForRegistry = abi.encodeWithSelector(
-            registryImpl.initialize.selector,
-            (uint16(block.chainid))
+            registryImpl.initialize.selector
         );
 
         // 3. Deploy ERC1967Proxy (UUPS-compatible)
@@ -88,7 +87,7 @@ contract DeployRyzerCore is Script {
 
         console.log("Registry impl", address(registryImpl));
         console.log("Factory impl", address(factoryImpl));
-        console.log("Project", address(_projectTemplate));
+        console.log("RealEstate", address(_projectTemplate));
         console.log("Escrow", address(_escrowTemplate));
         console.log("OrderManager", address(_orderManagerTemplate));
         console.log("Dao", address(_daoTemplate));

@@ -1,32 +1,6 @@
 [
   {
     "type": "function",
-    "name": "ADMIN_ROLE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "BURNER_ROLE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "DEFAULT_ADMIN_ROLE",
     "inputs": [],
     "outputs": [
@@ -79,85 +53,7 @@
   },
   {
     "type": "function",
-    "name": "MINTER_ROLE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "MIN_SIGNATURES",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "PROJECT_ADMIN_ROLE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "TOKEN_DECIMALS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "UPGRADE_INTERFACE_VERSION",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "USDT_DECIMALS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "VERSION",
     "inputs": [],
     "outputs": [
       {
@@ -173,12 +69,12 @@
     "name": "allowance",
     "inputs": [
       {
-        "name": "owner",
+        "name": "_owner",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "spender",
+        "name": "_spender",
         "type": "address",
         "internalType": "address"
       }
@@ -197,12 +93,12 @@
     "name": "approve",
     "inputs": [
       {
-        "name": "spender",
+        "name": "_spender",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "value",
+        "name": "_amount",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -231,36 +127,10 @@
   },
   {
     "type": "function",
-    "name": "assetId",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "assetType",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "balanceOf",
     "inputs": [
       {
-        "name": "account",
+        "name": "_userAddress",
         "type": "address",
         "internalType": "address"
       }
@@ -279,12 +149,53 @@
     "name": "batchBurn",
     "inputs": [
       {
-        "name": "from",
+        "name": "_userAddresses",
         "type": "address[]",
         "internalType": "address[]"
       },
       {
-        "name": "amounts",
+        "name": "_amounts",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "batchForcedTransfer",
+    "inputs": [
+      {
+        "name": "_fromList",
+        "type": "address[]",
+        "internalType": "address[]"
+      },
+      {
+        "name": "_toList",
+        "type": "address[]",
+        "internalType": "address[]"
+      },
+      {
+        "name": "_amounts",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "batchFreezePartialTokens",
+    "inputs": [
+      {
+        "name": "_userAddresses",
+        "type": "address[]",
+        "internalType": "address[]"
+      },
+      {
+        "name": "_amounts",
         "type": "uint256[]",
         "internalType": "uint256[]"
       }
@@ -297,12 +208,12 @@
     "name": "batchMint",
     "inputs": [
       {
-        "name": "to",
+        "name": "_toList",
         "type": "address[]",
         "internalType": "address[]"
       },
       {
-        "name": "amounts",
+        "name": "_amounts",
         "type": "uint256[]",
         "internalType": "uint256[]"
       }
@@ -312,52 +223,85 @@
   },
   {
     "type": "function",
-    "name": "cancelDelay",
-    "inputs": [],
-    "outputs": [
+    "name": "batchSetAddressFrozen",
+    "inputs": [
       {
-        "name": "",
+        "name": "_userAddresses",
+        "type": "address[]",
+        "internalType": "address[]"
+      },
+      {
+        "name": "_freeze",
+        "type": "bool[]",
+        "internalType": "bool[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "batchTransfer",
+    "inputs": [
+      {
+        "name": "_toList",
+        "type": "address[]",
+        "internalType": "address[]"
+      },
+      {
+        "name": "_amounts",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "batchUnfreezePartialTokens",
+    "inputs": [
+      {
+        "name": "_userAddresses",
+        "type": "address[]",
+        "internalType": "address[]"
+      },
+      {
+        "name": "_amounts",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "burn",
+    "inputs": [
+      {
+        "name": "_userAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_amount",
         "type": "uint256",
         "internalType": "uint256"
       }
     ],
-    "stateMutability": "view"
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
-    "name": "chainId",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint16",
-        "internalType": "uint16"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "companyId",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "dao",
+    "name": "compliance",
     "inputs": [],
     "outputs": [
       {
         "name": "",
         "type": "address",
-        "internalType": "address"
+        "internalType": "contract ICompliance"
       }
     ],
     "stateMutability": "view"
@@ -377,29 +321,27 @@
   },
   {
     "type": "function",
-    "name": "defaultLockPeriod",
-    "inputs": [],
-    "outputs": [
+    "name": "decreaseAllowance",
+    "inputs": [
       {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "dividendPct",
-    "inputs": [],
-    "outputs": [
+        "name": "_spender",
+        "type": "address",
+        "internalType": "address"
+      },
       {
-        "name": "",
+        "name": "_subtractedValue",
         "type": "uint256",
         "internalType": "uint256"
       }
     ],
-    "stateMutability": "view"
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -416,62 +358,22 @@
   },
   {
     "type": "function",
-    "name": "escrow",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "factoryOwner",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "forceTransferSignatureCount",
+    "name": "forcedTransfer",
     "inputs": [
       {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "forceTransferSignatures",
-    "inputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "_from",
+        "type": "address",
+        "internalType": "address"
       },
       {
-        "name": "",
+        "name": "_to",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "_amount",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [
@@ -479,6 +381,43 @@
         "name": "",
         "type": "bool",
         "internalType": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "freezePartialTokens",
+    "inputs": [
+      {
+        "name": "_userAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getFrozenTokens",
+    "inputs": [
+      {
+        "name": "_userAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -520,10 +459,25 @@
     "inputs": [],
     "outputs": [
       {
-        "name": "",
+        "name": "details",
         "type": "tuple",
-        "internalType": "struct RyzerProject.ProjectDetails",
+        "internalType": "struct TokenStorage.TokenConfig",
         "components": [
+          {
+            "name": "identityRegistry",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "compliance",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "onchainID",
+            "type": "address",
+            "internalType": "address"
+          },
           {
             "name": "name",
             "type": "string",
@@ -533,6 +487,11 @@
             "name": "symbol",
             "type": "string",
             "internalType": "string"
+          },
+          {
+            "name": "decimals",
+            "type": "uint8",
+            "internalType": "uint8"
           },
           {
             "name": "maxSupply",
@@ -550,52 +509,12 @@
             "internalType": "uint256"
           },
           {
-            "name": "dividendPct",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "minInvestment",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "maxInvestment",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "assetType",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "metadataCID",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "legalMetadataCID",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "companyId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "assetId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
             "name": "projectOwner",
             "type": "address",
             "internalType": "address"
           },
           {
-            "name": "factoryOwner",
+            "name": "factory",
             "type": "address",
             "internalType": "address"
           },
@@ -615,26 +534,84 @@
             "internalType": "address"
           },
           {
-            "name": "owner",
-            "type": "address",
-            "internalType": "address"
+            "name": "companyId",
+            "type": "bytes32",
+            "internalType": "bytes32"
           },
           {
-            "name": "chainId",
-            "type": "uint16",
-            "internalType": "uint16"
+            "name": "assetId",
+            "type": "bytes32",
+            "internalType": "bytes32"
           },
           {
-            "name": "isActive",
-            "type": "bool",
-            "internalType": "bool"
+            "name": "metadataCID",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "assetType",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "legalMetadataCID",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "dividendPct",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "premintAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minInvestment",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxInvestment",
+            "type": "uint256",
+            "internalType": "uint256"
           },
           {
             "name": "eoiPct",
             "type": "uint256",
             "internalType": "uint256"
+          },
+          {
+            "name": "lockPeriod",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "requiredSignatures",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "isActive",
+            "type": "bool",
+            "internalType": "bool"
           }
         ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getProjectOwner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -654,141 +631,6 @@
         "name": "",
         "type": "bytes32",
         "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getTokenDetails",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "tuple",
-        "internalType": "struct RyzerRealEstateToken.TokenDetails",
-        "components": [
-          {
-            "name": "name",
-            "type": "string",
-            "internalType": "string"
-          },
-          {
-            "name": "symbol",
-            "type": "string",
-            "internalType": "string"
-          },
-          {
-            "name": "totalSupply",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "maxSupply",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "tokenPrice",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "assetType",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "chainId",
-            "type": "uint16",
-            "internalType": "uint16"
-          },
-          {
-            "name": "version",
-            "type": "string",
-            "internalType": "string"
-          },
-          {
-            "name": "cancelDelay",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "dividendPct",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "minInvestment",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "maxInvestment",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "metadataCID",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "legalMetadataCID",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "companyId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "assetId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "projectOwner",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "factoryOwner",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "escrow",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "orderManager",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "dao",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "owner",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "isActive",
-            "type": "bool",
-            "internalType": "bool"
-          },
-          {
-            "name": "eoiPct",
-            "type": "uint256",
-            "internalType": "uint256"
-          }
-        ]
       }
     ],
     "stateMutability": "view"
@@ -837,26 +679,65 @@
   },
   {
     "type": "function",
-    "name": "initialize",
-    "inputs": [
+    "name": "identityRegistry",
+    "inputs": [],
+    "outputs": [
       {
-        "name": "initData",
-        "type": "bytes",
-        "internalType": "bytes"
+        "name": "",
+        "type": "address",
+        "internalType": "contract IIdentityRegistry"
       }
     ],
-    "outputs": [],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "increaseAllowance",
+    "inputs": [
+      {
+        "name": "_spender",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_addedValue",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
     "stateMutability": "nonpayable"
   },
   {
     "type": "function",
-    "name": "initialize",
+    "name": "init",
     "inputs": [
       {
-        "name": "params",
+        "name": "_config",
         "type": "tuple",
-        "internalType": "struct RyzerProject.ProjectInitParams",
+        "internalType": "struct TokenStorage.TokenConfig",
         "components": [
+          {
+            "name": "identityRegistry",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "compliance",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "onchainID",
+            "type": "address",
+            "internalType": "address"
+          },
           {
             "name": "name",
             "type": "string",
@@ -866,6 +747,11 @@
             "name": "symbol",
             "type": "string",
             "internalType": "string"
+          },
+          {
+            "name": "decimals",
+            "type": "uint8",
+            "internalType": "uint8"
           },
           {
             "name": "maxSupply",
@@ -889,6 +775,21 @@
           },
           {
             "name": "factory",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "escrow",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "orderManager",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "dao",
             "type": "address",
             "internalType": "address"
           },
@@ -918,11 +819,6 @@
             "internalType": "bytes32"
           },
           {
-            "name": "chainId",
-            "type": "uint16",
-            "internalType": "uint16"
-          },
-          {
             "name": "dividendPct",
             "type": "uint256",
             "internalType": "uint256"
@@ -946,6 +842,21 @@
             "name": "eoiPct",
             "type": "uint256",
             "internalType": "uint256"
+          },
+          {
+            "name": "lockPeriod",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "requiredSignatures",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "isActive",
+            "type": "bool",
+            "internalType": "bool"
           }
         ]
       }
@@ -955,26 +866,32 @@
   },
   {
     "type": "function",
-    "name": "isActive",
-    "inputs": [],
+    "name": "initialize",
+    "inputs": [
+      {
+        "name": "initData",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "isFrozen",
+    "inputs": [
+      {
+        "name": "_userAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
     "outputs": [
       {
         "name": "",
         "type": "bool",
         "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "legalMetadataCID",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
       }
     ],
     "stateMutability": "view"
@@ -1000,32 +917,6 @@
   },
   {
     "type": "function",
-    "name": "maxInvestment",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "metadataCID",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "metadataUpdateCount",
     "inputs": [],
     "outputs": [
@@ -1039,16 +930,21 @@
   },
   {
     "type": "function",
-    "name": "minInvestment",
-    "inputs": [],
-    "outputs": [
+    "name": "mint",
+    "inputs": [
       {
-        "name": "",
+        "name": "_to",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_amount",
         "type": "uint256",
         "internalType": "uint256"
       }
     ],
-    "stateMutability": "view"
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -1065,20 +961,7 @@
   },
   {
     "type": "function",
-    "name": "orderManager",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "owner",
+    "name": "onchainID",
     "inputs": [],
     "outputs": [
       {
@@ -1105,19 +988,6 @@
         "name": "",
         "type": "bool",
         "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "projectOwner",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -1155,6 +1025,35 @@
   },
   {
     "type": "function",
+    "name": "recoveryAddress",
+    "inputs": [
+      {
+        "name": "_lostWallet",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_newWallet",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_investorOnchainID",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "renounceRole",
     "inputs": [
       {
@@ -1170,19 +1069,6 @@
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "requiredSignatures",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -1204,12 +1090,17 @@
   },
   {
     "type": "function",
-    "name": "setAssetType",
+    "name": "setAddressFrozen",
     "inputs": [
       {
-        "name": "newAssetType",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "_userAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_freeze",
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
     "outputs": [],
@@ -1217,12 +1108,12 @@
   },
   {
     "type": "function",
-    "name": "setMaxSupply",
+    "name": "setCompliance",
     "inputs": [
       {
-        "name": "newMaxSupply",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "_compliance",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "outputs": [],
@@ -1230,7 +1121,46 @@
   },
   {
     "type": "function",
-    "name": "setProjectContracts",
+    "name": "setIdentityRegistry",
+    "inputs": [
+      {
+        "name": "_identityRegistry",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setName",
+    "inputs": [
+      {
+        "name": "_name",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setOnchainID",
+    "inputs": [
+      {
+        "name": "_onchainID",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setProjectContractsAndPreMint",
     "inputs": [
       {
         "name": "_escrow",
@@ -1246,17 +1176,9 @@
         "name": "_dao",
         "type": "address",
         "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setTokenPrice",
-    "inputs": [
+      },
       {
-        "name": "newTokenPrice",
+        "name": "_preMintAmount",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -1266,40 +1188,12 @@
   },
   {
     "type": "function",
-    "name": "setUsdtToken",
+    "name": "setSymbol",
     "inputs": [
       {
-        "name": "_usdtToken",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "signForceTransfer",
-    "inputs": [
-      {
-        "name": "from",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "to",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "reason",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "_symbol",
+        "type": "string",
+        "internalType": "string"
       }
     ],
     "outputs": [],
@@ -1339,6 +1233,149 @@
   },
   {
     "type": "function",
+    "name": "tokenConfig",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "identityRegistry",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "compliance",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "onchainID",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "symbol",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "decimals",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "maxSupply",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "tokenPrice",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "cancelDelay",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "projectOwner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "factory",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "escrow",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "orderManager",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "dao",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "companyId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "assetId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "metadataCID",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "assetType",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "legalMetadataCID",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "dividendPct",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "premintAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minInvestment",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxInvestment",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "eoiPct",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "lockPeriod",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "requiredSignatures",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "isActive",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "tokenPrice",
     "inputs": [],
     "outputs": [
@@ -1368,12 +1405,12 @@
     "name": "transfer",
     "inputs": [
       {
-        "name": "to",
+        "name": "_to",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "value",
+        "name": "_amount",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -1392,17 +1429,17 @@
     "name": "transferFrom",
     "inputs": [
       {
-        "name": "from",
+        "name": "_from",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "to",
+        "name": "_to",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "value",
+        "name": "_amount",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -1414,6 +1451,24 @@
         "internalType": "bool"
       }
     ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "unfreezePartialTokens",
+    "inputs": [
+      {
+        "name": "_userAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
     "stateMutability": "nonpayable"
   },
   {
@@ -1443,16 +1498,41 @@
   },
   {
     "type": "function",
-    "name": "usdtToken",
+    "name": "version",
     "inputs": [],
     "outputs": [
       {
         "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
+        "type": "string",
+        "internalType": "string"
       }
     ],
-    "stateMutability": "view"
+    "stateMutability": "pure"
+  },
+  {
+    "type": "event",
+    "name": "AddressFrozen",
+    "inputs": [
+      {
+        "name": "_userAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "_isFrozen",
+        "type": "bool",
+        "indexed": true,
+        "internalType": "bool"
+      },
+      {
+        "name": "_owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
   },
   {
     "type": "event",
@@ -1481,25 +1561,6 @@
   },
   {
     "type": "event",
-    "name": "AssetTypeSet",
-    "inputs": [
-      {
-        "name": "assetType",
-        "type": "bytes32",
-        "indexed": false,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "BatchLockPeriodSet",
     "inputs": [
       {
@@ -1513,12 +1574,19 @@
         "type": "uint48",
         "indexed": false,
         "internalType": "uint48"
-      },
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ComplianceAdded",
+    "inputs": [
       {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
+        "name": "_compliance",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -1538,86 +1606,19 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
   },
   {
     "type": "event",
-    "name": "ForceTransferSigned",
+    "name": "IdentityRegistryAdded",
     "inputs": [
       {
-        "name": "transferId",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "signer",
+        "name": "_identityRegistry",
         "type": "address",
         "indexed": true,
         "internalType": "address"
-      },
-      {
-        "name": "from",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "to",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "ForceTransferred",
-    "inputs": [
-      {
-        "name": "from",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "to",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -1650,31 +1651,6 @@
         "type": "uint48",
         "indexed": false,
         "internalType": "uint48"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "MaxSupplySet",
-    "inputs": [
-      {
-        "name": "maxSupply",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -1700,12 +1676,6 @@
         "type": "bool",
         "indexed": false,
         "internalType": "bool"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -1725,12 +1695,6 @@
         "type": "address",
         "indexed": true,
         "internalType": "address"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -1762,12 +1726,6 @@
         "type": "bool",
         "indexed": false,
         "internalType": "bool"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -1777,7 +1735,7 @@
     "name": "Paused",
     "inputs": [
       {
-        "name": "account",
+        "name": "_userAddress",
         "type": "address",
         "indexed": false,
         "internalType": "address"
@@ -1808,10 +1766,10 @@
         "internalType": "address"
       },
       {
-        "name": "chainId",
-        "type": "uint16",
+        "name": "preMintAmount",
+        "type": "uint256",
         "indexed": false,
-        "internalType": "uint16"
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1831,12 +1789,31 @@
         "type": "bytes32",
         "indexed": false,
         "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RecoverySuccess",
+    "inputs": [
+      {
+        "name": "_lostWallet",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
       },
       {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
+        "name": "_newWallet",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "_investorOnchainID",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -1918,69 +1895,38 @@
   },
   {
     "type": "event",
-    "name": "TokenPriceSet",
+    "name": "TokensFrozen",
     "inputs": [
       {
-        "name": "newTokenPrice",
+        "name": "_userAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "_amount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
   },
   {
     "type": "event",
-    "name": "TokensBurned",
+    "name": "TokensUnfrozen",
     "inputs": [
       {
-        "name": "from",
-        "type": "address[]",
+        "name": "_userAddress",
+        "type": "address",
         "indexed": true,
-        "internalType": "address[]"
+        "internalType": "address"
       },
       {
-        "name": "totalAmount",
+        "name": "_amount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "TokensMinted",
-    "inputs": [
-      {
-        "name": "to",
-        "type": "address[]",
-        "indexed": true,
-        "internalType": "address[]"
-      },
-      {
-        "name": "totalAmount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -2015,9 +1961,46 @@
     "name": "Unpaused",
     "inputs": [
       {
-        "name": "account",
+        "name": "_userAddress",
         "type": "address",
         "indexed": false,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "UpdatedTokenInformation",
+    "inputs": [
+      {
+        "name": "_newName",
+        "type": "string",
+        "indexed": true,
+        "internalType": "string"
+      },
+      {
+        "name": "_newSymbol",
+        "type": "string",
+        "indexed": true,
+        "internalType": "string"
+      },
+      {
+        "name": "_newDecimals",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "_newVersion",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "_newOnchainID",
+        "type": "address",
+        "indexed": true,
         "internalType": "address"
       }
     ],
@@ -2032,25 +2015,6 @@
         "type": "address",
         "indexed": true,
         "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "UsdtTokenSet",
-    "inputs": [
-      {
-        "name": "usdtToken",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "indexed": false,
-        "internalType": "uint16"
       }
     ],
     "anonymous": false
@@ -2100,17 +2064,6 @@
   },
   {
     "type": "error",
-    "name": "AlreadySigned",
-    "inputs": [
-      {
-        "name": "signer",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
     "name": "ERC1967InvalidImplementation",
     "inputs": [
       {
@@ -2127,147 +2080,8 @@
   },
   {
     "type": "error",
-    "name": "ERC20InsufficientAllowance",
-    "inputs": [
-      {
-        "name": "spender",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "allowance",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "needed",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ERC20InsufficientBalance",
-    "inputs": [
-      {
-        "name": "sender",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "balance",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "needed",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ERC20InvalidApprover",
-    "inputs": [
-      {
-        "name": "approver",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ERC20InvalidReceiver",
-    "inputs": [
-      {
-        "name": "receiver",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ERC20InvalidSender",
-    "inputs": [
-      {
-        "name": "sender",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ERC20InvalidSpender",
-    "inputs": [
-      {
-        "name": "spender",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "EnforcedPause",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "ExceedsMaxSupply",
-    "inputs": [
-      {
-        "name": "totalSupply",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "maxSupply",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ExpectedPause",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "FailedCall",
     "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InsufficientBalance",
-    "inputs": [
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "balance",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidAddress",
-    "inputs": [
-      {
-        "name": "addr",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
   },
   {
     "type": "error",
@@ -2288,17 +2102,6 @@
         "name": "assetType",
         "type": "bytes32",
         "internalType": "bytes32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidChainId",
-    "inputs": [
-      {
-        "name": "chainId",
-        "type": "uint16",
-        "internalType": "uint16"
       }
     ]
   },
@@ -2326,17 +2129,6 @@
         "name": "updateId",
         "type": "uint256",
         "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidParameter",
-    "inputs": [
-      {
-        "name": "parameter",
-        "type": "string",
-        "internalType": "string"
       }
     ]
   },
@@ -2406,6 +2198,17 @@
         "name": "slot",
         "type": "bytes32",
         "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "Unauthorized",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
       }
     ]
   },

@@ -1,292 +1,418 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.29;
 
-import "./RyzerProject.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "./interfaces/IRyzerEscrow.sol";
+import "./interfaces/IRyzerOrderManager.sol";
 
-/// @title ForcedTransferLib
-/// @notice Library for handling multi-signature forced transfers
-library ForcedTransferLib {
-    // Events
-    event ForceTransferSigned(
-        bytes32 indexed transferId, address indexed signer, address from, address to, uint256 amount, uint16 chainId
-    );
-    event ForceTransferred(address indexed from, address indexed to, uint256 amount, uint16 chainId);
+import {console} from "forge-std/console.sol";
 
-    // Errors
-    error InsufficientBalance(address account, uint256 balance);
-    error InvalidAddress(address addr);
-    error InvalidParameter(string parameter);
-    error AlreadySigned(address signer);
+import {RyzerProjectToken} from "./project/token/RyzerProjectToken.sol";
 
-    /// @notice Signs and processes a forced transfer
-    /// @param signatures Mapping of transfer IDs to signer signatures
-    /// @param signatureCount Mapping of transfer IDs to signature counts
-    /// @param from Source address
-    /// @param to Destination address
-    /// @param amount Amount to transfer
-    /// @param reason Reason for forced transfer
-    /// @param chainId Network chain ID
-    /// @param requiredSignatures Required number of signatures
-    /// @param token ERC-20 token contract
-    function signForceTransfer(
-        mapping(bytes32 => mapping(address => bool)) storage signatures,
-        mapping(bytes32 => uint256) storage signatureCount,
-        address from,
-        address to,
-        uint256 amount,
-        bytes32 reason,
-        uint16 chainId,
-        uint256 requiredSignatures,
-        IERC20 token
-    ) internal {
-        if (from == address(0) || to == address(0)) {
-            revert InvalidAddress(address(0));
-        }
-        if (amount == 0) revert InvalidParameter("amount");
-        if (token.balanceOf(from) < amount) {
-            revert InsufficientBalance(from, token.balanceOf(from));
-        }
-
-        bytes32 transferId = keccak256(abi.encode(from, to, amount, reason, block.timestamp));
-        if (signatures[transferId][msg.sender]) {
-            revert AlreadySigned(msg.sender);
-        }
-
-        signatures[transferId][msg.sender] = true;
-        signatureCount[transferId]++;
-
-        emit ForceTransferSigned(transferId, msg.sender, from, to, amount, chainId);
-
-        if (signatureCount[transferId] >= requiredSignatures) {
-            token.transfer(to, amount);
-            emit ForceTransferred(from, to, amount, chainId);
-            delete signatureCount[transferId];
-        }
-    }
-}
+//import {IRyzerDAO} from "./interfaces/IRyzerDAO.sol";
 
 /// @title RyzerRealEstateToken
-/// @notice ERC-20 token for tokenized real estate assets, extending RyzerProject
-/// @dev Inherits from RyzerProject with real estate-specific features like forced transfers and batch minting/burning
-contract RyzerRealEstateToken is RyzerProject {
+/// @notice ERC-3643 compliant token for general asset tokenization with transfer restrictions, access control, and metadata management
+/// @dev Uses OpenZeppelin upgradeable contracts for security, modularity, and upgradability
+contract RyzerRealEstateToken is
+    RyzerProjectToken,
+    UUPSUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     /*//////////////////////////////////////////////////////////////
-                        ERRORS
+                         ERRORS
     //////////////////////////////////////////////////////////////*/
-    error ExceedsMaxSupply(uint256 totalSupply, uint256 maxSupply);
 
-    /*//////////////////////////////////////////////////////////////
-                         TYPE DECLARATIONS
-    //////////////////////////////////////////////////////////////*/
-    struct TokenDetails {
+    error InvalidAddress(address addr);
+    error InvalidParameter(string parameter);
+    error ProjectInactive();
+    error InvalidMetadataCID(bytes32 cid);
+    error InvalidAssetType(bytes32 assetType);
+    error TokensLocked(address user, uint48 unlockTime);
+    error InvalidMetadataUpdate(uint256 updateId);
+    error AlreadySigned(address signer);
+    error UpdateAlreadyExecuted(uint256 updateId);
+
+    uint256 public constant MAX_DIVIDEND_PCT = 50;
+    uint256 public constant MAX_EOI_PCT = 50;
+    uint256 public constant DEFAULT_LOCK_PERIOD = 365 days;
+
+    struct TokenConfig {
+        address identityRegistry;
+        address compliance;
+        address onchainID;
         string name;
         string symbol;
-        uint256 totalSupply;
+        uint8 decimals;
         uint256 maxSupply;
         uint256 tokenPrice;
-        bytes32 assetType;
-        uint16 chainId;
-        string version;
         uint256 cancelDelay;
-        uint256 dividendPct;
-        uint256 minInvestment;
-        uint256 maxInvestment;
-        bytes32 metadataCID;
-        bytes32 legalMetadataCID;
-        bytes32 companyId;
-        bytes32 assetId;
         address projectOwner;
-        address factoryOwner;
+        address factory;
         address escrow;
         address orderManager;
         address dao;
-        address owner;
-        bool isActive;
+        bytes32 companyId;
+        bytes32 assetId;
+        bytes32 metadataCID;
+        bytes32 assetType;
+        bytes32 legalMetadataCID;
+        uint256 dividendPct;
+        uint256 premintAmount;
+        uint256 minInvestment;
+        uint256 maxInvestment;
         uint256 eoiPct;
+        uint256 lockPeriod;
+        uint8 requiredSignatures;
+        bool isActive;
     }
 
-    /*//////////////////////////////////////////////////////////////
-                           STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
-    // Role identifiers
-    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
-
-    // Constants
-    uint256 public constant MIN_SIGNATURES = 2;
-    string public constant VERSION = "1.0.0";
-
-    // Mappings for forced transfers
-    mapping(bytes32 => mapping(address => bool)) public forceTransferSignatures;
-    mapping(bytes32 => uint256) public forceTransferSignatureCount;
-
-    /*//////////////////////////////////////////////////////////////
-                           EVENTS
-    //////////////////////////////////////////////////////////////*/
-    event TokensMinted(address[] indexed to, uint256 totalAmount, uint16 chainId);
-    event TokensBurned(address[] indexed from, uint256 totalAmount, uint16 chainId);
-    event MaxSupplySet(uint256 maxSupply, uint16 chainId);
-    event AssetTypeSet(bytes32 assetType, uint16 chainId);
-    event TokenPriceSet(uint256 newTokenPrice, uint16 chainId);
-
-    /*//////////////////////////////////////////////////////////////
-                           EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice Initializes the token
-    /// @param params Project initialization parameters
-    function initialize(ProjectInitParams memory params) external initializer {
-        super.initialize(abi.encode(params));
-
-        _setRoleAdmin(BURNER_ROLE, ADMIN_ROLE);
-        _grantRole(BURNER_ROLE, params.projectOwner);
+    struct MetadataUpdate {
+        bytes32 newCID;
+        bool isLegal;
+        uint256 signatureCount;
+        mapping(address => bool) signed;
+        bool executed;
     }
 
-    /// @notice Mints tokens to multiple addresses
-    /// @param to Array of recipient addresses
-    /// @param amounts Array of amounts to mint
-    function batchMint(address[] calldata to, uint256[] calldata amounts)
-        external
-        onlyRole(MINTER_ROLE)
-        whenNotPaused
-    {
-        if (to.length != amounts.length || to.length == 0) {
-            revert InvalidParameter("array length mismatch or empty");
-        }
-        uint256 totalAmount;
-        for (uint256 i = 0; i < to.length; i++) {
-            if (to[i] == address(0)) revert InvalidAddress(to[i]);
-            if (amounts[i] == 0) revert InvalidParameter("amount");
-            totalAmount += amounts[i];
-        }
-        if (totalSupply() + totalAmount > maxInvestment) {
-            revert ExceedsMaxSupply(totalSupply() + totalAmount, maxInvestment);
-        }
-        for (uint256 i = 0; i < to.length; i++) {
-            _mint(to[i], amounts[i]);
-        }
-        emit TokensMinted(to, totalAmount, chainId);
+    TokenConfig public tokenConfig;
+
+    // Mappings
+    mapping(address => uint48) public lockUntil;
+    mapping(uint256 => MetadataUpdate) private metadataUpdates;
+    uint256 public metadataUpdateCount;
+
+    /*//////////////////////////////////////////////////////////////
+                         EVENTS
+    //////////////////////////////////////////////////////////////*/
+    event LockPeriodSet(address indexed user, uint48 unlockTime);
+    event BatchLockPeriodSet(uint256 userCount, uint48 unlockTime);
+    event ProjectDeactivated(address indexed project, bytes32 reason);
+    event MetadataUpdateProposed(
+        uint256 indexed updateId,
+        bytes32 newCID,
+        bool isLegal
+    );
+    event MetadataUpdateSigned(
+        uint256 indexed updateId,
+        address indexed signer
+    );
+    event MetadataUpdated(
+        uint256 indexed updateId,
+        bytes32 oldCID,
+        bytes32 newCID,
+        bool isLegal
+    );
+    event ProjectContractsSet(
+        address indexed escrow,
+        address indexed orderManager,
+        address indexed dao,
+        uint256 preMintAmount
+    );
+    event EmergencyWithdrawal(address indexed recipient, uint256 amount);
+
+    /*//////////////////////////////////////////////////////////////
+                         EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Proposes a metadata update
+    function proposeMetadataUpdate(
+        bytes32 newCID,
+        bool isLegal
+    ) external onlyRole(PROJECT_ADMIN_ROLE) whenNotPaused {
+        if (newCID == bytes32(0)) revert InvalidMetadataCID(newCID);
+        uint256 updateId = metadataUpdateCount++;
+        MetadataUpdate storage update = metadataUpdates[updateId];
+        update.newCID = newCID;
+        update.isLegal = isLegal;
+        update.signed[msg.sender] = true;
+        update.signatureCount = 1;
+        emit MetadataUpdateProposed(updateId, newCID, isLegal);
     }
 
-    /// @notice Burns tokens from multiple addresses
-    /// @param from Array of source addresses
-    /// @param amounts Array of amounts to burn
-    function batchBurn(address[] calldata from, uint256[] calldata amounts)
-        external
-        onlyRole(BURNER_ROLE)
-        whenNotPaused
-    {
-        if (from.length != amounts.length || from.length == 0) {
-            revert InvalidParameter("array length mismatch or empty");
-        }
-        uint256 totalAmount;
-        for (uint256 i = 0; i < from.length; i++) {
-            if (from[i] == address(0)) revert InvalidAddress(from[i]);
-            if (amounts[i] == 0) revert InvalidParameter("amount");
-            if (balanceOf(from[i]) < amounts[i]) {
-                revert ForcedTransferLib.InsufficientBalance(from[i], balanceOf(from[i]));
+    /// @notice Approves a metadata update
+    function approveMetadataUpdate(
+        uint256 updateId
+    ) external onlyRole(PROJECT_ADMIN_ROLE) whenNotPaused {
+        MetadataUpdate storage update = metadataUpdates[updateId];
+        if (update.newCID == bytes32(0)) revert InvalidMetadataUpdate(updateId);
+        if (update.executed) revert UpdateAlreadyExecuted(updateId);
+        if (update.signed[msg.sender]) revert AlreadySigned(msg.sender);
+
+        update.signed[msg.sender] = true;
+        update.signatureCount++;
+        emit MetadataUpdateSigned(updateId, msg.sender);
+
+        uint256 requiredSignatures = tokenConfig.requiredSignatures;
+        bytes32 legalMetadataCID = tokenConfig.legalMetadataCID;
+        bytes32 metadataCID = tokenConfig.metadataCID;
+
+        if (update.signatureCount >= requiredSignatures) {
+            bytes32 oldCID = update.isLegal ? legalMetadataCID : metadataCID;
+            if (update.isLegal) {
+                legalMetadataCID = update.newCID;
+            } else {
+                metadataCID = update.newCID;
             }
-            totalAmount += amounts[i];
+            update.executed = true;
+            emit MetadataUpdated(
+                updateId,
+                oldCID,
+                update.newCID,
+                update.isLegal
+            );
         }
-        for (uint256 i = 0; i < from.length; i++) {
-            _burn(from[i], amounts[i]);
-        }
-        emit TokensBurned(from, totalAmount, chainId);
-    }
-
-    /// @notice Signs a forced transfer request
-    /// @param from Source address
-    /// @param to Destination address
-    /// @param amount Amount to transfer
-    /// @param reason Reason for forced transfer
-    function signForceTransfer(address from, address to, uint256 amount, bytes32 reason)
-        external
-        nonReentrant
-        onlyRole(ADMIN_ROLE)
-        whenNotPaused
-    {
-        ForcedTransferLib.signForceTransfer(
-            forceTransferSignatures,
-            forceTransferSignatureCount,
-            from,
-            to,
-            amount,
-            reason,
-            chainId,
-            requiredSignatures,
-            IERC20(address(this))
-        );
-    }
-
-    /// @notice Updates the maximum token supply
-    /// @param newMaxSupply New maximum supply
-    function setMaxSupply(uint256 newMaxSupply) external onlyRole(ADMIN_ROLE) {
-        if (newMaxSupply < totalSupply() || newMaxSupply == 0) {
-            revert InvalidParameter("maxSupply");
-        }
-        maxInvestment = newMaxSupply * TOKEN_DECIMALS;
-        emit MaxSupplySet(maxInvestment, chainId);
-    }
-
-    /// @notice Updates the token price
-    /// @param newTokenPrice New token price
-    function setTokenPrice(uint256 newTokenPrice) external onlyRole(ADMIN_ROLE) {
-        if (newTokenPrice == 0) revert InvalidParameter("tokenPrice");
-        tokenPrice = newTokenPrice;
-        emit TokenPriceSet(newTokenPrice, chainId);
-    }
-
-    /// @notice Updates the asset type
-    /// @param newAssetType New asset type
-    function setAssetType(bytes32 newAssetType) external onlyRole(ADMIN_ROLE) {
-        if (
-            newAssetType != bytes32("Commercial") && newAssetType != bytes32("Residential")
-                && newAssetType != bytes32("Holiday") && newAssetType != bytes32("Land")
-        ) revert InvalidAssetType(newAssetType);
-        assetType = newAssetType;
-        emit AssetTypeSet(newAssetType, chainId);
     }
 
     /*//////////////////////////////////////////////////////////////
-                           INTERNAL FUNCTIONS
+                         PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @notice Initializes the contract
+    function initialize(bytes memory initData) public virtual initializer {
+        TokenConfig memory params = abi.decode(initData, (TokenConfig));
+        _validateInitParams(params);
+
+        __UUPSUpgradeable_init();
+
+        __ReentrancyGuard_init();
+
+        super.init(
+            params.identityRegistry,
+            params.compliance,
+            params.name,
+            params.symbol,
+            params.decimals,
+            params.maxSupply,
+            params.factory,
+            params.projectOwner,
+            params.onchainID
+        );
+
+        _setProjectState(params);
+    }
+
+    /// @notice Sets project-related contracts
+    function setProjectContractsAndPreMint(
+        address _escrow,
+        address _orderManager,
+        address _dao,
+        uint256 _preMintAmount
+    ) external onlyRole(MINTER_ROLE) whenNotPaused {
+        if (
+            _escrow == address(0) ||
+            _orderManager == address(0) ||
+            _dao == address(0)
+        ) {
+            revert InvalidAddress(address(0));
+        }
+        tokenConfig.escrow = _escrow;
+        tokenConfig.orderManager = _orderManager;
+        tokenConfig.dao = _dao;
+        if (_preMintAmount > 0) {
+            super.mint(_escrow, _preMintAmount);
+        }
+        emit ProjectContractsSet(_escrow, _orderManager, _dao, _preMintAmount);
+    }
+
+    /// @notice Pauses the contract and related contracts
+    function pause() public override onlyRole(ADMIN_ROLE) {
+        _tokenPaused = true;
+        address escrow = tokenConfig.escrow;
+        address orderManager = tokenConfig.orderManager;
+        if (escrow != address(0)) IRyzerEscrow(escrow).pause();
+        if (orderManager != address(0)) {
+            IRyzerOrderManager(orderManager).pause();
+        }
+    }
+
+    /// @notice Unpauses the contract and related contracts
+    function unpause() public override onlyRole(ADMIN_ROLE) {
+        _tokenPaused = false;
+        address escrow = tokenConfig.escrow;
+        address orderManager = tokenConfig.orderManager;
+        if (escrow != address(0)) IRyzerEscrow(escrow).unpause();
+        if (orderManager != address(0)) {
+            IRyzerOrderManager(orderManager).unpause();
+        }
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                         INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Sets initial project state
+    function _setProjectState(TokenConfig memory params) internal {
+        tokenConfig.tokenPrice = params.tokenPrice;
+        tokenConfig.cancelDelay = params.cancelDelay;
+        tokenConfig.projectOwner = params.projectOwner;
+        tokenConfig.factory = params.factory;
+        tokenConfig.companyId = params.companyId;
+        tokenConfig.assetId = params.assetId;
+        tokenConfig.metadataCID = params.metadataCID;
+        tokenConfig.legalMetadataCID = params.legalMetadataCID;
+        tokenConfig.assetType = params.assetType;
+        tokenConfig.dividendPct = params.dividendPct;
+        tokenConfig.eoiPct = params.eoiPct;
+        tokenConfig.minInvestment = params.minInvestment;
+        tokenConfig.maxInvestment = params.maxInvestment;
+        tokenConfig.requiredSignatures = params.requiredSignatures;
+        tokenConfig.lockPeriod = params.lockPeriod;
+        tokenConfig.isActive = params.isActive;
+    }
 
     /// @notice Hook to enforce transfer restrictions
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
-        super._beforeTokenTransfer(from, to, amount);
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal view override {
+        if (!tokenConfig.isActive) revert ProjectInactive();
+        if (from != address(0) && block.timestamp < lockUntil[from]) {
+            revert TokensLocked(from, lockUntil[from]);
+        }
+        if (to != address(0)) {
+            uint256 newBalance = balanceOf(to) + amount;
+            if (amount < tokenConfig.minInvestment && newBalance != 0) {
+                revert InvalidParameter("amount below minInvestment");
+            }
+            if (
+                newBalance > tokenConfig.maxInvestment &&
+                to != tokenConfig.escrow
+            ) {
+                revert InvalidParameter("exceeds maxInvestment");
+            }
+        }
     }
 
     /*//////////////////////////////////////////////////////////////
-                           EXTERNAL VIEW FUNCTIONS
+                         PRIVATE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Retrieves token details
-    /// @return TokenDetails struct containing token information
-    function getTokenDetails() external view returns (TokenDetails memory) {
-        ProjectDetails memory projectDetails = getProjectDetails();
-        return TokenDetails({
-            name: projectDetails.name,
-            symbol: projectDetails.symbol,
-            totalSupply: totalSupply(),
-            maxSupply: projectDetails.maxInvestment,
-            tokenPrice: projectDetails.tokenPrice,
-            assetType: projectDetails.assetType,
-            chainId: projectDetails.chainId,
-            version: VERSION,
-            cancelDelay: projectDetails.cancelDelay,
-            dividendPct: projectDetails.dividendPct,
-            minInvestment: projectDetails.minInvestment,
-            maxInvestment: projectDetails.maxInvestment,
-            metadataCID: projectDetails.metadataCID,
-            legalMetadataCID: projectDetails.legalMetadataCID,
-            companyId: projectDetails.companyId,
-            assetId: projectDetails.assetId,
-            projectOwner: projectDetails.projectOwner,
-            factoryOwner: projectDetails.factoryOwner,
-            escrow: projectDetails.escrow,
-            orderManager: projectDetails.orderManager,
-            dao: projectDetails.dao,
-            owner: projectDetails.owner,
-            isActive: projectDetails.isActive,
-            eoiPct: projectDetails.eoiPct
+    /// @notice Validates initialization parameters
+    function _validateInitParams(TokenConfig memory params) private pure {
+        if (params.factory == address(0)) revert InvalidAddress(params.factory);
+        if (params.projectOwner == address(0)) {
+            revert InvalidAddress(params.projectOwner);
+        }
+        if (params.maxSupply == 0) revert InvalidParameter("maxSupply");
+        if (params.tokenPrice == 0) revert InvalidParameter("tokenPrice");
+        if (params.cancelDelay == 0) revert InvalidParameter("cancelDelay");
+        if (params.dividendPct > MAX_DIVIDEND_PCT) {
+            revert InvalidParameter("dividendPct");
+        }
+        if (params.eoiPct > MAX_EOI_PCT) revert InvalidParameter("eoiPct");
+        if (params.premintAmount > params.maxSupply) {
+            revert InvalidParameter("premintAmount");
+        }
+        if (params.metadataCID == bytes32(0)) {
+            revert InvalidMetadataCID(params.metadataCID);
+        }
+        if (params.legalMetadataCID == bytes32(0)) {
+            revert InvalidMetadataCID(params.legalMetadataCID);
+        }
+        if (params.minInvestment == 0) revert InvalidParameter("minInvestment");
+        if (params.maxInvestment < params.minInvestment) {
+            revert InvalidParameter("maxInvestment");
+        }
+        if (
+            params.assetType != bytes32("Commercial") &&
+            params.assetType != bytes32("Residential") &&
+            params.assetType != bytes32("Holiday") &&
+            params.assetType != bytes32("Land")
+        ) revert InvalidAssetType(params.assetType);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                         INTERNAL VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Authorizes contract upgrades
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal view virtual override onlyRole(ADMIN_ROLE) {
+        if (
+            newImplementation == address(0) ||
+            newImplementation.code.length == 0
+        ) {
+            revert InvalidAddress(newImplementation);
+        }
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                         EXTERNAL VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Returns the project owner
+    function getProjectOwner() external view returns (address) {
+        return tokenConfig.projectOwner;
+    }
+
+    /// @notice Returns the token price
+    function tokenPrice() external view returns (uint256) {
+        return tokenConfig.tokenPrice;
+    }
+
+    /// @notice Returns the eoi pct
+    function eoiPct() external view returns (uint256) {
+        return tokenConfig.eoiPct;
+    }
+
+    /// @notice Returns whether the project is active
+    function getIsActive() external view returns (bool) {
+        return tokenConfig.isActive;
+    }
+
+    /// @notice Returns investment limits
+    function getInvestmentLimits()
+        external
+        view
+        returns (uint256 minInvestment_, uint256 maxInvestment_)
+    {
+        return (tokenConfig.minInvestment, tokenConfig.maxInvestment);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                         PUBLIC VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Returns project details
+    function getProjectDetails()
+        external
+        view
+        virtual
+        returns (TokenConfig memory details)
+    {
+        details = TokenConfig({
+            identityRegistry: address(_tokenIdentityRegistry),
+            compliance: address(_tokenCompliance),
+            onchainID: _tokenOnchainID,
+            name: _tokenName,
+            symbol: _tokenSymbol,
+            decimals: _tokenDecimals,
+            maxSupply: _totalSupply,
+            tokenPrice: tokenConfig.tokenPrice,
+            cancelDelay: tokenConfig.cancelDelay,
+            projectOwner: tokenConfig.projectOwner,
+            factory: tokenConfig.factory,
+            escrow: tokenConfig.escrow,
+            orderManager: tokenConfig.orderManager,
+            dao: tokenConfig.dao,
+            companyId: tokenConfig.companyId,
+            assetId: tokenConfig.assetId,
+            metadataCID: tokenConfig.metadataCID,
+            assetType: tokenConfig.assetType,
+            legalMetadataCID: tokenConfig.legalMetadataCID,
+            dividendPct: tokenConfig.dividendPct,
+            premintAmount: tokenConfig.premintAmount,
+            minInvestment: tokenConfig.minInvestment,
+            maxInvestment: tokenConfig.maxInvestment,
+            eoiPct: tokenConfig.eoiPct,
+            lockPeriod: tokenConfig.lockPeriod,
+            requiredSignatures: tokenConfig.requiredSignatures,
+            isActive: tokenConfig.isActive
         });
     }
 }
