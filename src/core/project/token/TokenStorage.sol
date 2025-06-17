@@ -16,6 +16,7 @@ contract TokenStorage {
     mapping(address => mapping(address => uint256)) internal _allowances;
 
     uint256 internal _totalSupply;
+    uint256 public maxSupply;
 
     /// @dev Token information
     string internal _tokenName;

@@ -153,6 +153,16 @@ contract RyzerFactoryTest is Test {
             address daoAddresss
         ) = _createProject(deployer, companyId, projectName);
 
+        assert(
+            RyzerRealEstateToken(projectAddress).maxSupply() ==
+                RyzerRealEstateToken(projectAddress).balanceOf(escrowAddress)
+        );
+
+        assert(
+            RyzerRealEstateToken(projectAddress).maxSupply() ==
+                RyzerRealEstateToken(projectAddress).totalSupply()
+        );
+
         assertEq(companyId, 1);
     }
 

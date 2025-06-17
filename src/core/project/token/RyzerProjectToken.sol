@@ -57,7 +57,8 @@ abstract contract RyzerProjectToken is
         _tokenDecimals = _decimals;
         _tokenOnchainID = _onchainID;
         _tokenPaused = false;
-        _totalSupply = _maxSupply;
+        maxSupply = _maxSupply;
+        _totalSupply = 0;
 
         _grantRole(DEFAULT_ADMIN_ROLE, _projectOwner);
         _grantRole(ADMIN_ROLE, _projectOwner);
@@ -489,6 +490,7 @@ abstract contract RyzerProjectToken is
         //     _tokenCompliance.canTransfer(address(0), _to, _amount),
         //     "Compliance not followed"
         // );
+        require(_totalSupply + _amount <= maxSupply, "Cap exceeded");
         _mint(_to, _amount);
         //_tokenCompliance.created(_to, _amount);
     }
